@@ -16,6 +16,7 @@ public:
 		name=new string(v);
 	}
 	virtual ~Node(){
+		//cout <<"destruct:" <<*name << endl;
 		delete name;
 	}
 	bool operator ==(const string &r) const {
@@ -34,6 +35,10 @@ public:
 	void print(void) const {
 		cout << 'M'<<seq << '\t' << src->get_name() << '\t' << dst->get_name() << '\t' << right << endl;
 	}
+	virtual ~Path(){
+		//cout << src->get_name() << "=>" << dst->get_name() << endl;
+		
+	}
 };
 typedef vector<Path*> PATHES;
 typedef vector<Node*> NODES;
@@ -42,104 +47,20 @@ typedef vector<Node*> NODES;
 void usage(){
 	cout << "usage:\n    chemical file_name\n" << endl;
 }
-class eqstring{
-private:
-	const string cmp;
-public:
-	eqstring(const string &v):cmp(v){}
-	bool operator()(const string *s) const {
-		return cmp == *s;
-	}
-};
-int sort_right(Path *lhs,Path *rhs){
+
+bool sort_right(Path *lhs,Path *rhs){
 	return lhs->right < rhs->right;
 }
-int sort_seq(Path *lhs,Path *rhs){
+bool sort_seq(Path *lhs,Path *rhs){
 	return lhs->seq < rhs->seq;
 }
-bool exists(Path* p,const PATHES& pathes){
-	for(PATHES::const_iterator itr=pathes.begin();itr != pathes.end();itr++){
-		if( *itr == p) return true;
-	}
-	return false;
-}
-int sum_right(const PATHES::const_iterator start,const PATHES::const_iterator end){
-	int sum=0;
-	for(PATHES::const_iterator itr=start;itr != end;itr++){
-		sum += (*itr)->right;
-	}
-	return sum;
-}
-bool eq_seq(Path *lhs,Path *rhs){
-	return lhs->seq == rhs->seq;
-}
+
 void print(const PATHES& p){
 	for(PATHES::const_iterator i=p.begin();i != p.end();i++){
 		(*i)->print();
 	}
 }
 
-bool insert_if(PATHES &solu,Path *p){
-	for(int i=0;i<solu.size();i++){
-		if(p == solu[i]) return false;
-		if(p->dst == solu[i]->dst) return false;
-		if(p->src == solu[i]->src) return false;
-		
-	}
-	solu.push_back(p);
-	return true;
-}
-// return false - not closed
-// return true  - closed
-bool check_close(const PATHES &p){
-	int size=p.size();
-	for(int i=0;i<size;i++){
-		Node *start=p[i]->src;
-		Node *next=p[i]->dst;
-		for(int j=0;j<size;j++){
-			if(p[i]==p[j]) continue;
-			if(next == p[j]->src){
-				next = p[j]->dst;
-				if(next == start) return true;
-				j=0;
-			}
-		}
-	}
-	return false;
-}
-bool resolv(int index,const PATHES &pathes,const NODES& nodes,PATHES& solution){
-	int size=nodes.size();
-	solution.push_back(pathes[index]);
-	int debug_count=0;
-	while(1){
-//		if(debug_count++>1000) {
-//			cout << "------------------------" << endl;
-//			print(solution);
-//			return false;
-//		}
-		if(solution.size()==size) break;
-		if(check_close(solution)){
-			// 结果 不完整
-//			cout << "imcompleted results!" << endl;
-//			print(solution);
-			return false;
-		}
-		for(int i=0;i<pathes.size();i++){
-			if(insert_if(solution,pathes[i])) {
-				break;
-			}
-		}
-	}
-/*
-	sort(solution.begin(),solution.end(),sort_seq);
-	cout << sum_right(solution.begin(),solution.end()) << endl;
-	for(int i=0;i<solution.size();i++){
-		cout << solution[i]->seq << ' ';
-	}
-	cout << endl;
-*/
-	return true;
-}
 void generate_puzzle(int number){
 	ofstream out("puzzle.txt");
 	int c=0;
@@ -152,26 +73,62 @@ void generate_puzzle(int number){
 	}
 	out.close();
 }
-int main(int argc, char *argv[]){
-	if(argc == 1){
-		usage();
-		return 0;
-	}
-	if(strcmp(argv[1],"gen")==0){
-		int c=atoi(argv[2]);
-		generate_puzzle(c);
-		return 0;
-	}
-	ifstream infile(argv[1]);
-	if(!infile){
-		cerr << "File is not found!" << endl;
-		return -1;
-	}
 
-	// parse input file
+PATHES pathes,solution;
+NODES nodes;
+int sum_right(const PATHES &p){
+	int sum=0;
+	for(int i=0;i<p.size();i++){
+		sum += p[i]->right;
+	}
+	return sum;
+}
+bool is_right_one(const Path *p,const PATHES &s){
+	for(int i=0;i<s.size();i++){
+		if(p->dst == s[i]->src) return false;
+	}
+	return true;
+}
+
+void resolve(const PATHES &solu,const Node *next_one){
+	int result_r=sum_right(solution);
+	if(result_r>0){
+		if(sum_right(solu)>result_r)return;
+	}
+	if(solu.size() == nodes.size()-1){
+		for(int i=0;i<pathes.size();i++){
+			if(pathes[i]->src == next_one && pathes[i]->dst == solu[0]->src){
+				if(result_r==0){
+					solution.insert(solution.begin(),solu.begin(),solu.end());
+					solution.push_back(pathes[i]);
+				} else {
+					int temp_r=sum_right(solu)+pathes[i]->right;
+					if(result_r>temp_r){
+						solution.clear();
+						solution.insert(solution.begin(),solu.begin(),solu.end());
+						solution.push_back(pathes[i]);
+					}
+				}
+				return;
+			}
+		}
+	}
+	for(int i=0;i<pathes.size();i++){
+		if(pathes[i]->src == next_one){
+			if(is_right_one(pathes[i],solu)){
+				PATHES temp_solu;
+				temp_solu.insert(temp_solu.begin(),solu.begin(),solu.end());
+				temp_solu.push_back(pathes[i]);
+				resolve(temp_solu,pathes[i]->dst);
+			}
+		}
+	}
+}
+// parse input file
+void parse(ifstream &infile){
 	string holder;
-	NODES nodes;
-	PATHES pathes;
+//	NODES nodes;
+//	PATHES pathes;
 	while(infile >> holder){
 		Path *p=new Path;
 		string temp=string(holder.erase(holder.begin()),holder.end());
@@ -209,33 +166,71 @@ int main(int argc, char *argv[]){
 		pathes.push_back(p);
 
 	}
+}
+int main(int argc, char *argv[]){
+	if(argc == 1){
+		usage();
+		return 0;
+	}
+	if(strcmp(argv[1],"-G")==0){
+		int c=atoi(argv[2]);
+		generate_puzzle(c);
+		return 0;
+	}
+	const char *filename;
+	if(strcmp(argv[1],"-s")==0){
+		filename="puzzle.txt";
+	} else {
+		filename=argv[1];
+	}
+	
+	ifstream infile(filename);
+	if(!infile){
+		cerr << "File is not found!" << endl;
+		return -1;
+	}
+	parse(infile);
+	infile.close();
 	sort(pathes.begin(),pathes.end(),sort_right);
-//	print(pathes);
-	PATHES best_solu;
+	if(strcmp(argv[1],"-s")==0){
+		print(pathes);
+		return 0;
+	}
+	
+//	PATHES solution;
+	nodes.clear();
+	
 	for(int i=0;i<pathes.size();i++){
-		PATHES solution;
-		if(!resolv(i,pathes,nodes,solution))continue;
-		if(best_solu.size()==0){
-			best_solu.insert(best_solu.begin(),solution.begin(),solution.end());
-		} else {
-			if(sum_right(best_solu.begin(),best_solu.end())>sum_right(solution.begin(),solution.end())){
-				best_solu.clear();
-				best_solu.insert(best_solu.begin(),solution.begin(),solution.end());
+		NODES::const_iterator itr=find(nodes.begin(),nodes.end(),pathes[i]->src);
+		if(itr==nodes.end()){
+			nodes.push_back(*itr);
+		}
+	}
+	solution.clear();
+	for(int i=0;i<nodes.size();i++){
+		for(int j=0;j<pathes.size();j++){
+			if(pathes[j]->src == nodes[i]){
+				PATHES solu;
+				solu.push_back(pathes[j]);
+				resolve(solu,pathes[j]->dst);
+				break;
 			}
 		}
 	}
-	sort(best_solu.begin(),best_solu.end(),sort_seq);
-	cout << sum_right(best_solu.begin(),best_solu.end()) << endl;
-	for(int i=0;i<best_solu.size();i++){
-		cout << best_solu[i]->seq << ' ';
+	sort(solution.begin(),solution.end(),sort_right);
+	print(solution);
+	cout << "---------------------------------" << endl;
+	sort(solution.begin(),solution.end(),sort_seq);
+	for(int i=0;i<solution.size();i++){
+		cout << solution[i]->seq << " ";
 	}
-	cout << endl;
+	cout << endl << sum_right(solution) << endl;
 	
-	// release memory
-	for(PATHES::const_iterator itr=pathes.begin();itr != pathes.end();itr++){
-		delete *itr;
+	
+	for(int i=0;i<pathes.size();i++){
+		delete pathes[i];
 	}
-	for(NODES::const_iterator itr=nodes.begin();itr != nodes.end();itr++){
-		delete *itr;
+	for(int i=0;i<nodes.size();i++){
+		delete nodes[i];
 	}
 }
