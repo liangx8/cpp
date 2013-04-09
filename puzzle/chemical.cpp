@@ -1,3 +1,7 @@
+﻿/*
+ * 穷举遍历方式求解，相当低效
+ */
+
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -45,7 +49,7 @@ typedef vector<Node*> NODES;
 
 
 void usage(){
-	cout << "usage:\n    chemical file_name\n" << endl;
+	cout << "usage:\n    \033[0;33mchemical file_name\033[0m\n" << endl;
 }
 
 bool sort_right(Path *lhs,Path *rhs){
@@ -83,43 +87,54 @@ int sum_right(const PATHES &p){
 	}
 	return sum;
 }
-bool is_right_one(const Path *p,const PATHES &s){
-	for(int i=0;i<s.size();i++){
-		if(p->dst == s[i]->src) return false;
-	}
-	return true;
-}
 
-void resolve(const PATHES &solu,const Node *next_one){
-	int result_r=sum_right(solution);
-	if(result_r>0){
-		if(sum_right(solu)>result_r)return;
-	}
-	if(solu.size() == nodes.size()-1){
-		for(int i=0;i<pathes.size();i++){
-			if(pathes[i]->src == next_one && pathes[i]->dst == solu[0]->src){
-				if(result_r==0){
-					solution.insert(solution.begin(),solu.begin(),solu.end());
-					solution.push_back(pathes[i]);
-				} else {
-					int temp_r=sum_right(solu)+pathes[i]->right;
-					if(result_r>temp_r){
-						solution.clear();
-						solution.insert(solution.begin(),solu.begin(),solu.end());
-						solution.push_back(pathes[i]);
-					}
-				}
-				return;
-			}
+bool nextif(Path *p,const PATHES &ps){
+	for(int i=0;i<ps.size();i++){
+		if(p->dst == ps[i]->src){
+			return false;
 		}
 	}
+	//p->print();
+	return true;
+}
+void copy(PATHES &dst,const PATHES &src){
+	dst.clear();
+	for(int i=0;i<src.size();i++){
+		dst.push_back(src[i]);
+	}
+}
+Path* find_final(const PATHES &solu){
+	Node *src=solu[solu.size()-1]->dst;
+	Node *dst=solu[0]->src;
 	for(int i=0;i<pathes.size();i++){
-		if(pathes[i]->src == next_one){
-			if(is_right_one(pathes[i],solu)){
+		if(pathes[i]->src == src && pathes[i]->dst == dst){
+			return pathes[i];
+		}
+	}
+	return NULL;
+}
+void resolve(Node *nd,const PATHES &solu){
+	if(solu.size() == nodes.size()-1){
+		Path *final=find_final(solu);
+		int right=sum_right(solution);
+		if (right==0){
+			copy(solution,solu);
+			solution.push_back(final);
+			return;
+		}
+		if(right>sum_right(solu)+final->right){
+			copy(solution,solu);
+			solution.push_back(final);
+		}
+		return;
+	}
+	for(int i=0;i<pathes.size();i++){
+		if(pathes[i]->src == nd){
+			if (nextif(pathes[i],solu)){
 				PATHES temp_solu;
-				temp_solu.insert(temp_solu.begin(),solu.begin(),solu.end());
+				copy(temp_solu,solu);
 				temp_solu.push_back(pathes[i]);
-				resolve(temp_solu,pathes[i]->dst);
+				resolve(pathes[i]->dst,temp_solu);
 			}
 		}
 	}
@@ -196,41 +211,18 @@ int main(int argc, char *argv[]){
 		print(pathes);
 		return 0;
 	}
-	
-//	PATHES solution;
-	nodes.clear();
-	
 	for(int i=0;i<pathes.size();i++){
 		NODES::const_iterator itr=find(nodes.begin(),nodes.end(),pathes[i]->src);
 		if(itr==nodes.end()){
 			nodes.push_back(*itr);
 		}
 	}
-	solution.clear();
-	for(int i=0;i<nodes.size();i++){
-		for(int j=0;j<pathes.size();j++){
-			if(pathes[j]->src == nodes[i]){
-				PATHES solu;
-				solu.push_back(pathes[j]);
-				resolve(solu,pathes[j]->dst);
-				break;
-			}
-		}
-	}
-	sort(solution.begin(),solution.end(),sort_right);
+	PATHES solu;
+//void resolve(const PATHES &solu,const Node *next_one){	
+	resolve(pathes[0]->src,solu);
 	print(solution);
-	cout << "---------------------------------" << endl;
-	sort(solution.begin(),solution.end(),sort_seq);
-	for(int i=0;i<solution.size();i++){
-		cout << solution[i]->seq << " ";
-	}
-	cout << endl << sum_right(solution) << endl;
-	
-	
+	cout << sum_right(solution);
 	for(int i=0;i<pathes.size();i++){
 		delete pathes[i];
-	}
-	for(int i=0;i<nodes.size();i++){
-		delete nodes[i];
 	}
 }
