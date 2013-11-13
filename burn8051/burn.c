@@ -21,6 +21,7 @@ runing depend on SiUtl.dll and USBHID.dll,
 void readCodeMemory(char *file,DWORD size);
 void readXMemory(void);
 void readMemory(void);
+void interAction(void);
 
 
 HRESULT connectC2(const char *serialName,int powerTarget,int disableDialogBox){
@@ -112,7 +113,10 @@ burn [option] <target>\n\
 \t\t n = 2, 16K\n\
 \t\t n = 3, 32K\n\
 \ttarget	output file\n\n\
-\t-m	show xram\n\
+\t-m [i,x,d]\n\
+\t\t\tx - show xram\n\
+\t\t\ti - show sram\n\
+\t\t\td - debug\n\
 \ttarget is omited\n"
 );
 }
@@ -129,6 +133,7 @@ int main(int argc,char **argv){
 	
 	int readXram=0;
 	int readRam=0;
+	int intact=0;
 
 	DWORD readSize;
 	int readMCU=0;
@@ -170,6 +175,7 @@ int main(int argc,char **argv){
 				switch(optarg[0]){
 					case 'x':readXram=1;break;
 					case 'i':readRam=1;break;
+					case 'd':intact=1;break;
 					default:
 						wprintf(L"-m should be 'x' or 'i'\n");
 						usage();return 0;
@@ -206,6 +212,10 @@ int main(int argc,char **argv){
 		}
 		if(readRam){
 			readMemory();
+			return 0;
+		}
+		if(intact){
+			interAction();
 			return 0;
 		}
 

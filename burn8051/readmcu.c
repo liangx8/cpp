@@ -1,4 +1,4 @@
-#include <stdio.h>
+﻿#include <stdio.h>
 #include <malloc.h>
 
 #include <windows.h>
@@ -156,3 +156,99 @@ error_end:
 	disconnectC2();
 }
 
+void interAction(void){
+	BYTE buf[512];
+	HRESULT result;
+	const char *pChar;
+	int	is_running;
+	result=GetUSBDeviceSN(0,&pChar);
+	if(FAILED(result)){
+		wprintf(L"Get device serial number error(%x)!\n",result);
+		return;
+	}
+	result=connectC2(pChar,0,1);
+	if(FAILED(result)){
+		return;
+	}
+	wprintf(L"Target running...\n");
+	if(FAILED(run_target())){
+		goto error_end;
+	}
+	is_running=1;
+	wprintf(
+L"***************************************\n\
+*              debug mode             *\n\
+***************************************\n\
+\tq - quit\n\
+\tx - read XRAM\n\
+\ti - read RAM\n\
+\th - halt target\n\
+\tg - run target\n"
+);
+
+	while(1){
+		char c;
+
+		c=getchar();
+		switch(c){
+			case 'q':goto error_end;
+			case '\n':
+				wprintf(L"[q/x/i/h/g]\n");
+				if(is_running)
+					wprintf(L"!");
+				else
+					wprintf(L"?");
+				break;
+			case 'h':
+				if(!is_running) break;
+				result=SetTargetHalt();
+				if(FAILED(result)){
+					wprintf(L"Set target halt error(%x)\n",result);
+					goto error_end;
+					
+				}
+				wprintf(L"Target halt\n");
+				is_running=0;
+				break;
+			case 'g':
+				if(is_running) break;
+				if(FAILED(run_target())){
+					goto error_end;
+				}
+				wprintf(L"target running\n");
+				is_running=1;
+				break;
+			case 'x':
+				if(is_running){
+					wprintf(L"halt target first\n");
+				}else {
+					
+					result=GetXRAMMemory(buf, 0, 512);
+					if(FAILED(result)){
+						wprintf(L"Read XRAM error(%x)\n",result);
+						goto error_end;
+					}
+					show(buf,32);
+				}
+				break;
+			case 'i':
+				if(is_running){
+					wprintf(L"halt target first\n");
+				}else {
+					result=GetRAMMemory(buf, 0, 256);
+					if(FAILED(result)){
+						wprintf(L"Read RAM error(%x)\n",result);
+						goto error_end;
+					}
+					show(buf,16);
+				}
+				break;
+			default:
+				break;
+		}
+		
+	}
+
+error_end:
+	disconnectC2();
+}
