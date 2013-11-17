@@ -7,7 +7,7 @@ TARGET=main
 
 SRCS=irc.cc parser_cmd.cc
 OBJS=${SRCS:.cc=.o}
-LDFLAGS=-Wall -g -lrt# -static
+LDFLAGS=-Wall -g -lrt -lpthread # -static
 
 all:${TARGET}
 	@echo "*** Done ***"

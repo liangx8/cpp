@@ -10,11 +10,13 @@
 #include <cstring>
 #include <vector>
 #include <cstdlib>
+#include <string>
+
 #include <sys/socket.h>
 #include <netdb.h>
 #include <arpa/inet.h>
-#include <string>
 #include <pthread.h>
+#include <unistd.h>
 #include "parser_cmd.h"
 
 #define BUF_SIZE	512
@@ -97,7 +99,7 @@ const wchar_t * run_server(const char*port){
 	listen(socket_fd,10);
 	//std::wcout << L"checkpoint 2" << std::endl;
 	socklen_t addr_size=sizeof(client_addr);
-	int thread_res;
+	//int thread_res;
 	while(1){
 		fd_set fdset;
 		FD_ZERO(&fdset);
@@ -116,7 +118,7 @@ const wchar_t * run_server(const char*port){
 		std::wcout << L"connecting request comming" << std::endl;
 		struct conn_info ci;
 		ci.socket_fd=new_fd;
-		thread_res=pthread_create(&ci.pid,NULL,cnn_establish,(void*)&ci);
+		pthread_create(&ci.pid,NULL,cnn_establish,(void*)&ci);
 		std::wcout << L"connection:" << ++client_count << std::endl;
 	}
 	close(socket_fd);

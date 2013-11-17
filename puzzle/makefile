@@ -1,19 +1,25 @@
 .PHONY: clean
 CC=g++
-FLAG=-Wall -g -L./
-CFLAG=
-OBJS=chemical.o
+RM=rm -rf
+CFLAGS=-Wall -g
+TARGET=chemical
 
-LFLAG=${FLAG} 
 
-all:main.exe
+SRCS=chemical.cc data.cc
+OBJS=${SRCS:.cc=.o}
+LDFLAGS=-Wall -g # -static
+
+all:${TARGET}
 	@echo "*** Done ***"
-main.exe:${OBJS}
-	${CC} -o $@ ${OBJS} ${LFLAG}
-
-
+release:${OBJS}
+	${CC} -o ${TARGET} ${OBJS} ${LDFLAGS} -static
+	strip	${TARGET}
+	@echo "*** Done ***"
+${TARGET}:${OBJS}
+	${CC} -o $@ ${OBJS} ${LDFLAGS}
 clean:
-	${RM} -rf *.o *.exe
+	${RM} *.o ${TARGET}
 	
-%.o:%.cpp
-	${CC} -c $< ${CFLAG}
+.cc.o:
+	${CC} -c $< ${CFLAGS}
+
