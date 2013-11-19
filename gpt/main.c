@@ -61,7 +61,11 @@ int main(int argc, char **argv){
 	int i;
 	setlocale(LC_ALL,"");
 	wprintf(L"GPT description\n");
-	FILE *fp=fopen("/dev/sda","rb");
+	if (argc ==1) {
+		wprintf(L"block device or file must be provided!\n");
+		return 0;
+	}
+	FILE *fp=fopen(argv[1],"rb");
 	if(fp==NULL){
 		wprintf(L"open file error\n");
 		return -1;
