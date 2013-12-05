@@ -3,6 +3,7 @@
 #include <wchar.h>
 #include <malloc.h>
 #include <stdint.h>
+#include <iconv.h>
 
 const wchar_t *hex=L"0123456789abcdef";
 typedef struct {
@@ -29,11 +30,33 @@ typedef struct {
 	uint64_t attributes;
 	uint16_t partition_name[36];
 } gpt_entry;
+
+void utf16_wchar(uint16_t src[],wchar_t *dst){
+	iconv_t cd=iconv_open("UCS-4LE","UTF-8");
+	int i;
+	uint8_t src_1[36];
+	char *inbuf=(char *)src_1;
+	char *outbuf=(char *)dst;
+	for(i=0;i<36;i++){
+		src_1[i]=src[i]&0xff;
+	}
+	size_t inbytesleft = 36;
+	size_t outbytesleft = 36*sizeof(wchar_t);
+	if (cd == (iconv_t) -1) {
+		wprintf(L"iconv_open:Impossible error\n");
+		return ;
+	}
+	iconv(cd,&inbuf,&inbytesleft,&outbuf,&outbytesleft);
+	dst[36]=0;
+	
+}
 void word2wchar(uint16_t src[],wchar_t *dst){
 	int i=0;
 	for(;i<36;i++){
+		wprintf(L"%x ",src[i]);
 		dst[i]=(wchar_t)src[i];
 	}
+	wprintf(L"\n");
 }
 void hexstring(uint8_t *src,wchar_t *dst,int length){
 	int i=0;
@@ -102,7 +125,7 @@ int main(int argc, char **argv){
 			hexstring(entries[i].unique_partition_guid,name,16);
 			wprintf(L"unique partition guid:%ls\n",name);
 
-			word2wchar(entries[i].partition_name,name);
+			utf16_wchar(entries[i].partition_name,name);
 			wprintf(L"partition name:%ls\n",name);
 		}
 	
