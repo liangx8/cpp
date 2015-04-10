@@ -6,3 +6,4 @@ Some utilities for personal use
 - gpt look into GUID partition table structure
 - ldd Linux driver development
 - btree a balance tree algorithm(Not completed)
+- files search a large file in sub-directory
