@@ -2,7 +2,7 @@ CC=gcc
 TARGET=mathpng
 OBJS=mathpng.o
 CFLAGS=
-LFLAGS=-lpng -lm
+LFLAGS=-lpng -lm -Wall
 all:${TARGET}
 ${TARGET}:${OBJS}
 	${CC} -o $@ $< ${LFLAGS}

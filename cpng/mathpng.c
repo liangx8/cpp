@@ -12,6 +12,7 @@
 #include <math.h>
 #include <malloc.h>
 #include <png.h>
+#include <wchar.h>
 const float PI = 3.1415926;
 // Creates a test image for saving. Creates a Mandelbrot Set fractal of size width x height
 void createMandelbrotImage(int width, int height, float xS, float yS, float rad, int maxIteration);
