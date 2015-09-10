@@ -2,7 +2,7 @@
 CC=gcc
 RM=rm -rf
 CFLAGS=-Wall -g
-TARGET=color
+TARGET=color char
 
 
 SRCS=${TARGET}.c
@@ -11,12 +11,10 @@ LDFLAGS=-Wall -g # -static
 
 all:${TARGET}
 	@echo "*** Done ***"
-release:${OBJS}
-	${CC} -o ${TARGET} ${OBJS} ${LDFLAGS} -static
-	strip	${TARGET}
-	@echo "*** Done ***"
-${TARGET}:${OBJS}
-	${CC} -o $@ ${OBJS} ${LDFLAGS}
+char:char.o
+	${CC} -o $@ $< ${LDFLAGS}
+color:color.o
+	${CC} -o $@ $< ${LDFLAGS}
 clean:
 	${RM} *.o ${TARGET} *~
 
