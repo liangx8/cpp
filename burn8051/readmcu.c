@@ -10,7 +10,7 @@ HRESULT run_target(void){
 	if(SUCCEEDED(result)){
 		Sleep(1000);		// sleep 2 seconds
 	} else {
-		wprintf(L"(%x)\n",result);
+		wprintf(L"error (%x)\n",result);
 	}
 	return result;
 }
@@ -115,6 +115,7 @@ void readMemory(void){
 error_end:
 	disconnectC2();
 }
+// buffer size should be 1,2,3,4
 void readXMemory(void){
 	BYTE buf[512];
 	HRESULT result;
@@ -193,11 +194,11 @@ L"***************************************\n\
 		switch(c){
 			case 'q':goto error_end;
 			case '\n':
-				wprintf(L"[q/x/i/h/g]\n");
+				wprintf(L"[r/q/x/i/h/g]\n");
 				if(is_running)
-					wprintf(L"!");
+					wprintf(L"R:");
 				else
-					wprintf(L"?");
+					wprintf(L"H:");
 				break;
 			case 'h':
 				if(!is_running) break;
@@ -243,6 +244,7 @@ L"***************************************\n\
 					show(buf,16);
 				}
 				break;
+
 			default:
 				break;
 		}

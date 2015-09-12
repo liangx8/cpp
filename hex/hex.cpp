@@ -14,10 +14,15 @@ Please report bugs to author.
 #include <fstream>
 #include <iomanip>
 #include <cstring>
+#include <sstream>
 #include <exception>
+#include <vector>
+
+
+#define BUF_CAPACITY 32*1024
 
 const char *hex="0123456789ABCDEF";
-
+/*
 void message(int errcode)
 {
 	std::cout << std::endl;
@@ -35,12 +40,12 @@ void message(int errcode)
 		std::cout << "hex file is incorrected!" << std::endl;
 	}
 }
-
-int c2d(char c) throw(int) {
+*/
+int c2d(char c) throw(std::string &) {
 	int idx=0;
 	while(hex[idx]!=c){
 		if(idx>15){
-			throw(4);
+			throw(std::string("Error:hex to integer error!"));
 		}
 		idx++;
 	}
@@ -48,145 +53,188 @@ int c2d(char c) throw(int) {
 }
 
 class Record{
-
+private:
+	unsigned position;
+	int cap;
+	uint8_t *buf;
 protected:
-	int pad;
-	int position;
 public:
-	Record():position(0){}
-	virtual int proc(const unsigned char*,int,int,std::ostream &) =0;
-	virtual void end(std::ostream *)=0;
+	Record(int capacity):position(0),cap(capacity){
+		this->buf=new uint8_t[capacity];
+	}
+	std::string& proc(std::istream *ins) throw(std::string &){
+		std::string *err;
+		std::stringstream ss;
+//		std::vector<uint8_t> row;
+		int lineno=0;
+		while(!ins->eof()){
+			int c=ins->get();
+			if(c==':'){
+				int sum;
+				int colsize=c2d((char)ins->get() )*16;
+				colsize+=c2d((char)ins->get());
+				sum=colsize;
+				unsigned address =c2d((char)ins->get())*16*16*16;
+				address+=c2d((char)ins->get())*16*16;
+				address+=c2d((char)ins->get())*16;
+				address+=c2d((char)ins->get());
+				sum += address +(address>>8);
+				int record_type=c2d((char)ins->get())*16;
+				record_type+=c2d((char)ins->get());
+				sum += record_type;
+				if(record_type==1)break;
+				if(record_type==0){
+					if (address < this->position){
+						ss << "address define backward warning at line(L:";
+						ss << std::dec << lineno << ",A:0x" << std::setfill('0') << std::setw(4) << std::hex << address << ",C:"  << std::setfill('0') << std::setw(4) << this->position << ')' << std::endl;
+						this->position=address;
+					}
+				} else {
+						ss << "Warning:record type:" << record_type << " is ignored!(L:" << lineno <<')' << std::endl;
+				}
+				for(int i=0;i<colsize;i++){
+					int data=c2d((char)ins->get())*16;
+					data += c2d((char)ins->get());
+					sum += data;
+					if(record_type==0){
+						this->buf[this->position]=data;
+						this->position++;
+					}
+				}
+				sum = (-sum) & 0xff;
+				int chksum=c2d((char)ins->get())*16;
+				chksum+=c2d((char)ins->get());
+				if(chksum != sum){
+					ss << "Error:check summer error at line(L:";
+					ss << c << ",A:0x" << std::setfill('0') << std::setw(4) << std::hex << address << ')' << std::endl;
+					throw ss.str();
+				}
+				lineno++;
+			}
+		}
+		err = new std::string(ss.str());
+		unsigned idx=0;
+		unsigned rest=0;
+		while(idx < (unsigned)this->position){
+			if(this->position - idx <16){
+				rest=this->position-idx;
+				break;
+			}
+			this->each16(idx,&(this->buf[idx]));
+			idx += 16;
+		}
+		this->end(idx,rest,&(this->buf[idx]));
+		return *err;
+	}
+	virtual void each16(int start,uint8_t *buf) =0;
+	virtual void end(unsigned start,unsigned rest,uint8_t *p)=0;
 	void set_pad(int v)
 	{
-		pad=v;
+		for(int i=0;i<this->cap;i++){
+			this->buf[i]=(uint8_t)v;
+		}
 	}
-	virtual ~Record(){}
+	virtual ~Record(){
+		delete [] this->buf;
+	}
 };
-
+// 1b2d
 class Xrecord:public Record{
 private:
-	int col_index;
 	char readable[17];
+	std::ostream *outs;
 public:
-	Xrecord():col_index(0){}
-	virtual int proc(const unsigned char *src,int address,int length, std::ostream &out){
-		if(address<position)return 1;
-		while(position<address){
-			if(col_index==0){
-				out<<"0x" << std::setfill('0') << std::setw(4) << std::hex << position<<' ';
-			}
-			out << "0x" << std::setfill('0') << std::setw(2) << std::hex <<pad;
-			readable[col_index]='.';
-			if(++col_index==16){
-				readable[col_index]=0;
-				col_index=0;
-				out << '\t' << (char *)readable << std::endl;
+	Xrecord(std::ostream *o):Record(BUF_CAPACITY),outs(o){}
+	virtual void each16(int start,uint8_t *p){
+		char readable[17];
+		*(this->outs) << "0x" << std::setfill('0') << std::setw(4) << std::hex << start<<": ";
+		for (int i=0;i<16;i++){
+			*(this->outs) << "0x" << std::setfill('0') << std::setw(2) << std::hex <<(int)p[i] << ' ';
+			if(p[i]<32 || p[i]>126){
+				readable[i]='.';
 			} else {
-				out << ',';
+				readable[i]=p[i];
 			}
-			position++;
 		}
-		for(int i=0;i<length;i++){
-			if(col_index==0){
-				out<<"0x" << std::setfill('0') << std::setw(4) << std::hex << position<<' ';
-			}
-			out << "0x" << std::setfill('0') << std::setw(2) << std::hex <<(int)src[i];
-			if(src[i]<32 || src[i]>126){
-				readable[col_index]='.';
-			} else {
-				readable[col_index]=src[i];
-			}
-			if(++col_index==16){
-				readable[col_index]=0;
-				col_index=0;
-				out << '\t' << (char *)readable << std::endl;
-			} else {
-				
-				out << ',';
-			}
-			position++;
-		}
-		return 0;
+		readable[16]='\0';
+		*(this->outs) << ' ' << readable << std::endl;
 	}
-	virtual void end(std::ostream *out){
-		readable[col_index]=0;
-		(*out) << '\t' << (char *)readable << std::endl;
+	virtual void end(unsigned start,unsigned rest,uint8_t *p){
+		if (rest == 0) return;
+		char readable[17];
+		*(this->outs) << "0x" << std::setfill('0') << std::setw(4) << std::hex << start<<": ";
+		int i;
+		for (i=0;i<(int)rest;i++){
+			*(this->outs) << "0x" << std::setfill('0') << std::setw(2) << std::hex <<(int)p[i] << ' ';
+			if(p[i]<32 || p[i]>126){
+				readable[i]='.';
+			} else {
+				readable[i]=p[i];
+			}
+		}
+		readable[i]='\0';
+		for (;i<16;i++){
+			*(this->outs) << "     ";
+		}
+		*(this->outs) << ' ' << readable << std::endl;
 	}
 };
 class Hrecord:public Record{
 private:
-	int col_index;
-	char readable[17];
+	std::ostream *outs;
 public:
-	Hrecord():col_index(0){}
-	virtual int proc(const unsigned char *src,int address,int length, std::ostream &out){
-		if(address<position)return 1;
-		while(position<address){
-			if(col_index==0){
-				out<< std::setfill('0') << std::setw(4) << std::hex << position<<"h ";
-			}
-			if(pad>0x9f)
-				out << '0';
-			else
-				out << ' ' ;
-			out << std::setfill('0') << std::setw(2) << std::hex <<pad << 'h';
-			readable[col_index]='.';
-			if(++col_index==16){
-				readable[col_index]=0;
-				col_index=0;
-				out << '\t' << (char *)readable << std::endl;
+	Hrecord(std::ostream *o):Record(BUF_CAPACITY),outs(o){}
+	virtual void each16(int start,uint8_t *p){
+		char readable[17];
+		*(this->outs) << std::setfill('0') << std::setw(4) << std::hex << start<<"h: ";
+		for (int i=0;i<16;i++){
+			
+			*(this->outs) << std::setfill('0') << std::setw(3) << std::hex <<(int)p[i] << "h ";
+			if(p[i]<32 || p[i]>126){
+				readable[i]='.';
 			} else {
-				out << ',';
+				readable[i]=p[i];
 			}
-			position++;
 		}
-		for(int i=0;i<length;i++){
-			if(col_index==0){
-				out << std::setfill('0') << std::setw(4) << std::hex << position<<"h ";
-			}
-			if(src[i]>0x9f)
-				out << '0';
-			else
-				out << ' ';
-			out << std::setfill('0') << std::setw(2) << std::hex <<(int)src[i] << 'h';
-			if(src[i]<32 || src[i]>126){
-				readable[col_index]='.';
-			} else {
-				readable[col_index]=src[i];
-			}
-			if(++col_index==16){
-				readable[col_index]=0;
-				col_index=0;
-				out << '\t' << (char *)readable << std::endl;
-			} else {
-				
-				out << ',';
-			}
-			position++;
-		}
-		return 0;
+		readable[16]='\0';
+		*(this->outs) << ' ' << readable << std::endl;
+
 	}
-	virtual void end(std::ostream *out){
-		readable[col_index]=0;
-		(*out) << '\t' << (char *)readable << std::endl;
+	virtual void end(unsigned start,unsigned rest,uint8_t *p){
+		if (rest == 0) return;
+		char readable[17];
+		*(this->outs) << std::setfill('0') << std::setw(4) << std::hex << start<<"h: ";
+		int i;
+		for (i=0;i<(int)rest;i++){
+			*(this->outs) << std::setfill('0') << std::setw(3) << std::hex <<(int)p[i] << "h ";
+			if(p[i]<32 || p[i]>126){
+				readable[i]='.';
+			} else {
+				readable[i]=p[i];
+			}
+		}
+		readable[i]='\0';
+		for (;i<16;i++){
+			*(this->outs) << "     ";
+		}
+		*(this->outs) << ' ' << readable << std::endl;
 	}
 };
 class Brecord:public Record{
+private:
+	std::ostream *outs;
 public:
-	virtual int proc(const unsigned char *src,int address,int length, std::ostream &out){
-		if(address<position)return 1;
-		while(position<address){
-			out.put(pad);
-			position++;
+	Brecord(std::ostream *o):Record(BUF_CAPACITY),outs(o){}
+
+	virtual void each16(int start,uint8_t *p){
+		for(int i=0;i<16;i++){
+			*(this->outs) << p[i];
 		}
-		for(int i=0;i<length;i++){
-			out.put(src[i]);
-			position++;
-		}
-		return 0;
 	}
-	virtual void end(std::ostream *out){
-//		((*std::ofstream)out)->close();
+	virtual void end(unsigned  start,unsigned rest,uint8_t *p){
+		for(unsigned i=0;i<rest;i++){
+			*(this->outs) << p[i];
+		}
 	}
 };
 void usage(const char *p){
@@ -201,11 +249,12 @@ void usage(const char *p){
 	std::cout<<"This is Intel HEX utility. Version 0.1 December 2012\n";
 	std::cout<<"This program can be used without any limited. USE AT YOUR OWN RISK.\n";
 	std::cout<<"Please report bugs to liangxiaowz@gmail.com\n\nUsage:\n";
-	std::cout << base<<" [-x | -h] [-f] [target]\n";
+	std::cout << base<<" [-l <filename>] [-x | -h] [-f] [target]\n";
 	std::cout << 
-"\t-x\tshow '0x' prefix\n\
-\t-h\tshow 'h' suffix\n\
-\t-f\tpadding with '0xff' instead of default 0.\n\
+"\t-x\t\tshow '0x' prefix\n\
+\t-h\t\tshow 'h' suffix\n\
+\t-f\t\tpadding with '0xff' instead of default 0.\n\
+\t-l filename\tlog error to file.\n\
 \tA raw file will be generated if omitting both '-x' and '-h'.\n\n\n";
 	std::cout << "\t "<<base<<" -x obiwen.hex\n";
 	std::cout << "\t "<<base<<" -h << obiwen.hex\n";
@@ -218,23 +267,22 @@ int main(int argc,char **argv){
 	std::ostream *outs=NULL;
 	std::ifstream *ifs=NULL;
 	std::ofstream *ofs=NULL;
+
 	char *outfile=NULL;
-	unsigned char buf[128];
-	int index;
+//	unsigned char buf[128];
+//	int index;
 	unsigned char pad=0;
-	int space;
+//	int space;
 	if(argc==1){
 		usage(argv[0]);
 		return 0;
 	}
 	for(int i=1;i<argc;i++){
 		if(std::strcmp(argv[i],"-x")==0){
-			r=new Xrecord();
-			outs=&std::cout;
+			r=new Xrecord(&std::cout);
 		}
 		if(std::strcmp(argv[i],"-h")==0){
-			r=new Hrecord();
-			outs=&std::cout;
+			r=new Hrecord(&std::cout);
 		}
 		if(std::strcmp(argv[i],"-f")==0){
 			pad=0xff;
@@ -283,62 +331,23 @@ int main(int argc,char **argv){
 			return 0;
 		}
 		
-		r=new Brecord();
+		r=new Brecord(outs);
 		
 	}
 	r->set_pad(pad);
 	if(ins==NULL)
 		ins=&std::cin;
-	try{
-		int byte_count=0;
-		while(!ins->eof()){
-			int c=ins->get();
-			int address;
-			int cols;
-			int record_type;
-			if(c==':'){
-				int sum;
-				int chksum;
-				index=0;
-				int errcode;
-
-				cols=c2d((char)ins->get())*16;
-				cols+=c2d((char)ins->get());
-				byte_count +=cols;
-				sum = cols;
-
-				address =c2d((char)ins->get())*16*16*16;
-				address+=c2d((char)ins->get())*16*16;
-				address+=c2d((char)ins->get())*16;
-				address+=c2d((char)ins->get());
-				sum += address +(address>>8);
-				record_type=c2d((char)ins->get())*16;
-				record_type+=c2d((char)ins->get());
-				sum += record_type;
-				if(record_type==1)break;
-				while(index<cols){
-					int data=c2d((char)ins->get())*16;
-					data +=c2d((char)ins->get());
-					sum += data;
-					buf[index++]=data;
-				}
-				sum = (-sum) & 0xff;
-				chksum=c2d((char)ins->get())*16;
-				chksum+=c2d((char)ins->get());
-				if(chksum != sum){
-					throw (2);
-				}
-				errcode=r->proc(buf,address,cols,*outs);
-				if(errcode){
-					throw (errcode);
-				}
-				space=address+cols;
-			}
+	try {
+		std::string err=r->proc(ins);
+		if (err.size()>0){
+			std::ofstream oerr("err.log",std::ios::trunc|std::ios::out);
+			oerr << err << std::endl;
+			oerr.close();
 		}
-		r->end(outs);
-		std::cout <<"Data size:" <<byte_count <<'/'<<space<< std::endl;
-	}catch(const int e){
-		message(e);
+	} catch (std::string &e){
+		std::ofstream oerr("err.log",std::ios::trunc|std::ios::out);
+		oerr << e << std::endl;
+		oerr.close();
 	}
 	if(ifs){
 		ifs->close();

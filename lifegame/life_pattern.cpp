@@ -1,6 +1,7 @@
 #include <iostream>
 #include <stdlib.h>
 #include <time.h>
+#include <libintl.h>
 #include "life_pattern.h"
 
 #define PP 5
@@ -11,7 +12,7 @@ LifePattern::~LifePattern(){
 	SelectObject(_hdcMem,_hbmOld);
 	DeleteObject(_hbmMem);
 	DeleteDC(_hdcMem);
-	std::cout << "release memory" << std::endl;
+	std::cout << gettext("release memory") << std::endl;
 }
 LifePattern::LifePattern(int size,HWND hwnd){
 	matrix=new int[size*size];

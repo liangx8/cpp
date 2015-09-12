@@ -1,3 +1,9 @@
+// -*-coding:utf-8-*-
+#ifndef UNICODE
+#define UNICODE
+#endif
+
+
 #include <iostream>
 #include <windows.h>
 #include <commctrl.h>
@@ -8,7 +14,7 @@
 #define ID_PREV_STEP	9992
 #define ID_NEXT_STEP	9993
 
-const static char g_szClassName[]="goTrapWindowClass";
+const static wchar_t g_szClassName[]=L"goTrapWindowClass";
 
 static GoTrap *g_pGoTrap;
 HWND g_hStatus;
@@ -29,12 +35,12 @@ void createToolbar(HWND hwnd){
     tbb[0].fsStyle = TBSTYLE_BUTTON;
     tbb[0].idCommand = ID_NEW_TRAP;
 
-    tbb[1].iBitmap = STD_FILEOPEN;
+    tbb[1].iBitmap = STD_REDOW;
     tbb[1].fsState = TBSTATE_ENABLED;
     tbb[1].fsStyle = TBSTYLE_BUTTON;
     tbb[1].idCommand = ID_PREV_STEP;
 
-    tbb[2].iBitmap = STD_FILESAVE;
+    tbb[2].iBitmap = STD_UNDO;
     tbb[2].fsState = TBSTATE_ENABLED;
     tbb[2].fsStyle = TBSTYLE_BUTTON;
     tbb[2].idCommand = ID_NEXT_STEP;
@@ -48,71 +54,73 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 	HDC hdc;
 	RECT rcClient;
 	switch(msg){
-		case WM_LBUTTONDOWN:
-			break;
-		case WM_CREATE:
-			GetClientRect(hwnd, &rcClient);
-			{
-				int width=rcClient.right-rcClient.left;
-				int height=rcClient.bottom-rcClient.top;
-				trap_size =  (width>height?height:width)-80;
-			}
-			break;
-		case WM_PAINT:
-			hdc=BeginPaint(hwnd,&ps);
-			
-			g_pGoTrap->paint(hdc,trap_size);
-			EndPaint(hwnd,&ps);
-			//			UpdateWindow(hwnd);
-			break;
-		case WM_SIZE:
-			SendMessage(g_hStatus,WM_SIZE,0,0);
-			SendMessage(g_hToolbar,WM_SIZE,0,0);
-			{
-				int width=LOWORD(lParam);
-				int height=HIWORD(lParam);
-				trap_size =  (width>height?height:width)-80;
-			}
-			InvalidateRect(hwnd,NULL,false);
-			break;
-		case WM_COMMAND:
-			switch(LOWORD(wParam)){
-				case IDM_QUIT:
-					PostQuitMessage(0);
-					break;
-				case ID_NEW_TRAP:
-//					SetTimer(hwnd,TIMER_ID,1000,NULL);
-					SendMessage(g_hStatus,SB_SETTEXT,0,(LPARAM)"ÐÂÆåÅÌ");
-//					u12pdate_screen(hwnd);
-					break;
-				case ID_PREV_STEP:
-					SendMessage(g_hStatus,SB_SETTEXT,0,(LPARAM)"ÉÏÒ»²½");
-//					KillTimer(hwnd,TIMER_ID);
-					break;
-				case ID_NEXT_STEP:
-					SendMessage(g_hStatus,SB_SETTEXT,0,(LPARAM)"ÏÂÒ»²½");
-//					life->init();
-//					InvalidateRect(hwnd,NULL,false);
-					break;
-			}
-			std::cout << LOWORD(wParam) << std::endl;
-			break;
-		case WM_TIMER:
-//			std::cout << "timer -----" << std::endl;
-//			if(wParam==TIMER_ID){
-//				life->next();
-//				InvalidateRect(hwnd,NULL,false);
-//			}
-			break;
-        case WM_CLOSE:
-//			KillTimer(hwnd,TIMER_ID);
-            DestroyWindow(hwnd);
-			break;
-        case WM_DESTROY:
-            PostQuitMessage(0);
-        break;
-        default:
-            return DefWindowProc(hwnd, msg, wParam, lParam);
+	case WM_LBUTTONUP:
+	  g_pGoTrap->point_clk(LOWORD(lParam),HIWORD(lParam));
+	  InvalidateRect(hwnd,NULL,false);
+	  break;
+	case WM_CREATE:
+	  GetClientRect(hwnd, &rcClient);
+	  {
+		int width=rcClient.right-rcClient.left;
+		int height=rcClient.bottom-rcClient.top;
+		trap_size =  (width>height?height:width)-5;
+	  }
+	  break;
+	case WM_PAINT:
+	  hdc=BeginPaint(hwnd,&ps);
+
+	  g_pGoTrap->paint(hdc,trap_size);
+	  EndPaint(hwnd,&ps);
+	  //			UpdateWindow(hwnd);
+	  break;
+	case WM_SIZE:
+	  SendMessage(g_hStatus,WM_SIZE,0,0);
+	  SendMessage(g_hToolbar,WM_SIZE,0,0);
+	  {
+		int width=LOWORD(lParam);
+		int height=HIWORD(lParam);
+		trap_size =  (width>height?height:width)-5;
+	  }
+	  InvalidateRect(hwnd,NULL,false);
+	  break;
+	case WM_COMMAND:
+	  switch(LOWORD(wParam)){
+	  case IDM_QUIT:
+		PostQuitMessage(0);
+		break;
+	  case ID_NEW_TRAP:
+		//					SetTimer(hwnd,TIMER_ID,1000,NULL);
+		SendMessage(g_hStatus,SB_SETTEXT,0,(LPARAM)L"æ–°æ£‹ç›˜");
+		//					u12pdate_screen(hwnd);
+		break;
+	  case ID_PREV_STEP:
+		SendMessage(g_hStatus,SB_SETTEXT,0,(LPARAM)L"ä¸Šä¸€æ­¥");
+		//					KillTimer(hwnd,TIMER_ID);
+		break;
+	  case ID_NEXT_STEP:
+		SendMessage(g_hStatus,SB_SETTEXT,0,(LPARAM)L"ä¸‹ä¸€æ­¥");
+		//					life->init();
+		//					InvalidateRect(hwnd,NULL,false);
+		break;
+	  }
+	  std::wcout << LOWORD(wParam) << std::endl;
+	  break;
+	case WM_TIMER:
+	  //			std::cout << "timer -----" << std::endl;
+	  //			if(wParam==TIMER_ID){
+	  //				life->next();
+	  //				InvalidateRect(hwnd,NULL,false);
+	  //			}
+	  break;
+	case WM_CLOSE:
+	  //			KillTimer(hwnd,TIMER_ID);
+	  DestroyWindow(hwnd);
+	  break;
+	case WM_DESTROY:
+	  PostQuitMessage(0);
+	  break;
+	default:
+	  return DefWindowProc(hwnd, msg, wParam, lParam);
     }
     return 0;
 }
@@ -141,7 +149,7 @@ int WINAPI WinMain(
 
     if(!RegisterClassEx(&wc))
     {
-        MessageBox(NULL, "Window Registration Failed!", "Error!",MB_ICONEXCLAMATION | MB_OK);
+        MessageBox(NULL, L"Window Registration Failed!", L"Error!",MB_ICONEXCLAMATION | MB_OK);
         return 0;
     }
 
@@ -149,13 +157,13 @@ int WINAPI WinMain(
     HWND hwnd = CreateWindowEx(
         WS_EX_APPWINDOW,//WS_EX_CLIENTEDGE,
         g_szClassName,
-        "Life game",
+        L"Life game",
         WS_OVERLAPPEDWINDOW,
         CW_USEDEFAULT, CW_USEDEFAULT, 500, 500,
         NULL, NULL, hInstance, NULL);
 
     if(hwnd == NULL){
-        MessageBox(NULL, "Window Creation Failed!", "Error!",MB_ICONEXCLAMATION | MB_OK);
+        MessageBox(NULL, L"Window Creation Failed!", L"Error!",MB_ICONEXCLAMATION | MB_OK);
         return 0;
     }
 	GoTrap gt;
@@ -167,10 +175,9 @@ int WINAPI WinMain(
 				hwnd,(HMENU)NULL,GetModuleHandle(NULL),NULL);
 	int status_widths[]={100,-1};
 	SendMessage(g_hStatus,SB_SETPARTS,sizeof(status_widths)/sizeof(int),(LPARAM)status_widths);
-	SendMessage(g_hStatus,SB_SETTEXT,0,(LPARAM)"Î§Æå");
+	SendMessage(g_hStatus,SB_SETTEXT,0,(LPARAM)L"å›´æ£‹");
     ShowWindow(hwnd, nCmdShow);
-	
-	
+
 
     // Step 3: The Message Loop
     while(GetMessage(&Msg, NULL, 0, 0) > 0){

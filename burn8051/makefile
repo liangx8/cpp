@@ -3,7 +3,7 @@ CC=gcc
 WINDRES=windres
 CFLAGS= -mwindows -Wall -g -DUNICODE
 OBJS=burn.o readmcu.o
-LDFLAGS=${FLAG} siutil.lib --enable-auto-import #--static -lgdi32  -lmingw32
+LDFLAGS=${FLAG} siutil.lib --enable-auto-import --static #-lgdi32  -lmingw32
 TARGET=burn
 
 all:${TARGET}.exe

@@ -9,7 +9,7 @@ private:
 public:
 	GoTrap();
 	virtual ~GoTrap();
-	
 	void paint(HDC,int) const;
+	void point_clk(int,int);
 };
 #endif
