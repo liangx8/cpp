@@ -2,9 +2,9 @@
 CC=g++
 WINDRES=windres
 FLAG=-Wall -g
-CFLAG= -mwindows
+CFLAG= ${FLAG}# -mwindows
 OBJS=main.o lifegame.res life_pattern.o
-LFLAG=${FLAG} -lmingw32 -lgdi32 --enable-auto-import #--static
+LFLAG=${FLAG} -lmingw32 -lintl -lgdi32 --enable-auto-import #--static
 
 all:main.exe
 	@echo "*** Done ***"
@@ -14,9 +14,7 @@ main.exe:${OBJS}
 
 clean:
 	${RM} -rf *.o *.exe *.res
-	
 %.o:%.cpp
 	${CC} -c $< ${CFLAG}
-	
 %.res: %.rc resource.h
 	${WINDRES} -DGCC_WINDRES -O coff $< $@

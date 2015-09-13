@@ -1,10 +1,17 @@
 CC=g++
 FLAG=-Wall
-CFLAG=${FLAG}
-OBJS=main.o
-TARGET=main
+
+#CFLAG=${FLAG}
+#OBJS=main.o
+#TARGET=main
 #在新版中，iconv的定义在 libc.so中
-LIBS=-lc #-liconv
+#LIBS=-lc #-liconv
+
+CFLAG=${FLAG} -g
+OBJS=file.o main.o winmode.o listview.o
+TARGET=main
+LIBS=-lintl -lcomctl32 # -static -liconv
+
 all:$(TARGET)
 	@echo "*** Done ***"
 $(TARGET):${OBJS}

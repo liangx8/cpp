@@ -8,6 +8,8 @@
 // Version 1.0 - Initial release
 
 #include <stdio.h>
+#include <stdint.h>
+
 #include <locale.h>
 #include <math.h>
 #include <malloc.h>
@@ -16,8 +18,6 @@
 const float PI = 3.1415926;
 // Creates a test image for saving. Creates a Mandelbrot Set fractal of size width x height
 void createMandelbrotImage(int width, int height, float xS, float yS, float rad, int maxIteration);
-
-
 // This function actually writes out the PNG image file. The string 'title' is
 // also written into the image file
 int writeImage(char* filename, int width, int height, char* title);
@@ -45,30 +45,64 @@ void createSineImage(int width,int height){
 	for(x=0;x<width;x++){
 		float fx=2*PI*(x-half_width)/half_width;
 		buffer[x]=-9.8*fx*fx;
-		
 	}
 	g_width=width;
 	g_height=height;
 	callback_color=sineColor;
 }
+int xbinColor(int x,int y){
+	
+	if (buffer[x]>.5)
+		return 0x008fff;
+	else
+		return -1;
+}
+void xbinImage(char *filename,int width,int height){
+	FILE *fp;
+	uint8_t buf[512];
+	int i,j;
+	g_width=width;
+	g_height=height;
+	buffer=(float*)malloc(width*sizeof(float));
+	fp = fopen(filename, "rb");
+	if(fp == NULL ){
+		fwprintf(stderr, L"Could not open file %s for reading\n", filename);
+	}
+	fseek(fp,0xc00,SEEK_SET);
+	fread(buf,1,512,fp);
+	if(fp != NULL) fclose(fp);
+	for(i=0;i<512;i++){
+		uint8_t v=buf[i];
+		for(j=0;j<8;j++){
+			if(v & 0x80){
+				buffer[i*8+j]=1.0;
+			} else {
+				buffer[i*8+j]=0.0;
+			}
+			v = v << 1;
+		}
+	}
+	callback_color=xbinColor;
+}
 int main(int argc, char *argv[])
 {
 	setlocale(LC_ALL,"");
 	// Make sure that the output filename argument has been provided
-	if (argc != 2) {
+	if (argc < 2) {
 		fwprintf(stderr, L"Please specify output file\n");
 		return 1;
 	}
 
 	// Specify an output image size
-	const int width = 1024;
-	const int height = 768;
+	const int width = 512*8;
+	const int height = 100;
 
 	// Create a test image - in this case a Mandelbrot Set fractal
 	// The output is a 1D array of floats, length: width * height
 	wprintf(L"创建图像数据\n");
 //	createMandelbrotImage(width, height, -0.802, -0.177, 0.011, 110);
-	createSineImage(width,height);
+//	createSineImage(width,height);
+	xbinImage(argv[2],512*8,100);
 	if (buffer == NULL) {
 		return 1;
 	}

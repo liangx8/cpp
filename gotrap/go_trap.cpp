@@ -1,3 +1,4 @@
+// -*-coding:utf-8-*-
 #include <iostream>
 
 #include "go_trap.h"
@@ -8,7 +9,10 @@ void drawRect(HDC h,int x1,int y1,int x2, int y2,HBRUSH hbLine){
 	LineTo(h,x2,y1);
 	LineTo(h,x1,y1);
 }
-
+void GoTrap::point_clk(int x,int y){
+  std::wcout << x << L',' << y << std::endl;
+}
+// 用了 buffer cache 来消除重新画图像的闪动
 void GoTrap::paint(HDC hdc,int total_size)const{
 	int grid_size=total_size/18;
 	if(grid_size<30)grid_size=30;
@@ -38,5 +42,5 @@ GoTrap::GoTrap(){
 }
 GoTrap::~GoTrap(){
 	delete [] _chesses;
-	std::cout << "release memory" << std::endl;
+	std::wcout << L"release memory" << std::endl;
 }

@@ -1,10 +1,10 @@
 /*
 2013-6-3
 快速烧写8051芯片
--d 不显示对话框，对于被保护的芯片，如果不用-e先删除的话，会
+-d 不显示对话框
+-e 烧写前先删除flash,对于被保护的芯片，如果不用-e先删除的话，会
    导致烧写失败
--e 烧写前先删除flash
--l 保护程序不被读取
+-l 不对芯片加读保护
 
 2013-7-17
 refer to an117.pdf
@@ -22,7 +22,6 @@ void readCodeMemory(char *file,DWORD size);
 void readXMemory(void);
 void readMemory(void);
 void interAction(void);
-
 
 HRESULT connectC2(const char *serialName,int powerTarget,int disableDialogBox){
 	HRESULT result;
@@ -56,7 +55,7 @@ wchar_t *ascii2unicode(const char *src){
 	wc[c]=0;
 	return wc;
 }
-void listUSB(int count,const char *hex,struct data *d){
+void listUSB(int count,struct data *d){
 	DWORD i;
 	wchar_t *wc;
 	HRESULT result;
@@ -75,7 +74,7 @@ void listUSB(int count,const char *hex,struct data *d){
 							wprintf(L"烧写出错(%X)\n",result);
 						} else {
 							wprintf(L"*********************************************\n");
-							wprintf(L"*             烧写成功                      *\n");
+							wprintf(L"*                 烧写成功                  *\n");
 							wprintf(L"*********************************************\n");
 						}
 						if(d->goRun){
@@ -102,22 +101,22 @@ void listUSB(int count,const char *hex,struct data *d){
 void usage(void){
 	wprintf(
 L"Usage:\nBurn hex framework to c8051. Copyright by Holy-win, Version 0.1\n\
-burn [option] <target>\n\
+burn [option] <file>\n\
 \t-l	Don't lock user space\n\
 \t-e	Don't erase before download\n\
 \t-d	don't show dialog\n\
 \t-R	run target after burn\n\
-\ttarget	hex file\n\n\
+\t\t file, the hex file will be burn to chip.\n\n\
 \t-r n	read code memory\n\
 \t\t n = 1, 8K\n\
 \t\t n = 2, 16K\n\
 \t\t n = 3, 32K\n\
-\ttarget	output file\n\n\
+\t\tfile,	output file\n\n\
 \t-m [i,x,d]\n\
 \t\t\tx - show xram\n\
 \t\t\ti - show sram\n\
 \t\t\td - debug\n\
-\ttarget is omited\n"
+\t\tfile, file is omited\n"
 );
 }
 
@@ -202,10 +201,13 @@ int main(int argc,char **argv){
 	}
 	result=USBDebugDevices(&dwDevices);
 	if(SUCCEEDED(result)){
+		const char *ps="xxx";
 		if(dwDevices <=0){
 			wprintf(L"No USB device found!\n");
 			return 0;
 		}
+		result=GetDeviceName(&ps);
+		wprintf(L"Target: %x\n",result);
 		if(readXram){
 			readXMemory();
 			return 0;
@@ -253,7 +255,7 @@ int main(int argc,char **argv){
 		wprintf(L"找到%d个烧写设备\n",(int)dwDevices);
 		while(1){
 			char c;
-			listUSB(dwDevices,argv[1],&d);
+			listUSB(dwDevices,&d);
 			wprintf(L"继续吗(Y/n)?");
 			c=getchar();
 			if(c != '\n')break;
