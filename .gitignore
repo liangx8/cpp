@@ -1,0 +1,10 @@
+*.pdf
+*.lib
+*.dll
+*.cmd
+*/locale/*
+*.po
+*.pot
+libusb/*
+*.[o~]
+*.exe
