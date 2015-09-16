@@ -31,13 +31,14 @@ void check_error(int error,const char *action){
 const char *git_dir=".git";
 char repo_root[256];
 int find_repo_root(){
-  DIR *parent=opendir((const char*)repo_root);
+  DIR *parent=opendir(repo_root);
   if (!parent){
 	printf(gettext("open dir '%s' error:%s\n"),repo_root,strerror(errno));
 	return -1;
   }
   struct dirent *child=readdir(parent);
   while(child){
+	printf("%s--%s\n",repo_root,child->d_name);
 	if((strlen(child->d_name)==4)
 	   && (strncmp(git_dir,child->d_name,4)==0)){
 	  closedir(parent);
@@ -132,22 +133,25 @@ static void print_commit(git_commit *commit)
 void showlog(git_repository *repo){
   git_revwalk *walker;
   git_oid oid;
-  int error;
-  int ex=0;
-  error=git_revwalk_new(&walker,repo);
-  check_error(error,gettext("create revsion walker"));
+
+
+
+  check_error(git_revwalk_new(&walker,repo),gettext("create revsion walker"));
+  check_error(git_revwalk_push_head(walker),gettext("push head walker"));  
   git_revwalk_sorting(walker,GIT_SORT_REVERSE);
 
-  while(!ex){
+  while(1){
 	git_commit *commit;
-	ex=git_revwalk_next(&oid,walker);
-	check_error(error,gettext("get next rev"));
-	error=git_commit_lookup(&commit,repo,&oid);
+	if(git_revwalk_next(&oid,walker)) break;
+	
+	
+	check_error(git_commit_lookup(&commit,repo,&oid),gettext("commit lookup"));
+	/*
 	if(!error){
 	  printf(gettext("commit lookup error"));
 	  continue;
 	}
-
+	*/
 	print_commit(commit);
 	git_commit_free(commit);
   }
@@ -177,8 +181,9 @@ int main(int argc,char **argv){
   repo_root[0]='.';
   repo_root[1]='\0';
   if(!find_repo_root()){
+	printf("use repository path:%s\n",repo_root);
 	git_libgit2_init();
-	error= git_repository_open(&repo,"./..");
+	error= git_repository_open(&repo,repo_root);
 	//error= git_repository_open(&repo,".");
 	check_error(error,gettext("open repository"));
 	aindex(repo);
