@@ -66,5 +66,19 @@ void buf_clean(struct bytebuffer *buf){
 
 void buf_reset(struct bytebuffer *buf){
   buf->size=buf->idx=0;
-  
+}
+const char *buf_strcpy(struct bytebuffer *buf,const char* src){
+  int len=strlen(src);
+  int resize=0;
+  int idx = buf->size;
+  buf->size += len+1;
+  while(buf->size>=buf->capcity){
+	buf->capcity += 256;
+	resize = 1;
+  }
+  if(resize){
+	buf->head=realloc(buf->head,buf->capcity);
+  }
+  strncpy(buf->head + idx,src,len+1);
+  return buf->head + idx;
 }

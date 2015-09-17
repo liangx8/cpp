@@ -15,6 +15,6 @@ void buf_add(struct bytebuffer *buf,int c);
 void buf_clean(struct bytebuffer *buf);
 void buf_init(struct bytebuffer *buf);
 void buf_reset(struct bytebuffer *buf);
-
+const char *buf_strcpy(struct bytebuffer *buf,const char* src);
 #endif
 

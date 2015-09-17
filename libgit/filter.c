@@ -2,6 +2,7 @@
 #include <locale.h>
 #include <git2.h>
 #include <libintl.h>
+#include <string.h>
 #include <errno.h>
 
 #include "common.h"
@@ -20,19 +21,28 @@ struct options{
   const char *dir;
 };
 struct commitinfo{
-  const git_signature* committer;
-  const git_signature* author;
+  const char *c_name,*c_email;
+  const char *a_name,*a_email;
   const char* message;
+  char strid[GIT_OID_HEXSZ+1];
 };
 
-static void get_commitinfo(git_repository *repo,struct commitinfo *info,const git_oid *id){
+static struct bytebuffer bbuf;
+static void get_commitinfo(git_repository *repo,struct commitinfo *info,const git_oid *oid){
   //  print_id(id);
   git_commit *commit;
-  check_error(git_commit_lookup(&commit,repo,id),gettext("lookup commit"));
-  info->committer=git_commit_author(commit);
-  info->author=git_commit_committer(commit);
+  const git_signature *sig;
+  check_error(git_commit_lookup(&commit,repo,oid),gettext("lookup commit"));
+  sig=git_commit_author(commit);
+  info->a_name=buf_strcpy(&bbuf,sig->name);
+  info->a_email=buf_strcpy(&bbuf,sig->email);
+  sig=git_commit_committer(commit);
+  info->c_name=buf_strcpy(&bbuf,sig->name);
+  info->c_email=buf_strcpy(&bbuf,sig->email);
   info->message=git_commit_message(commit);
   
+  git_oid_tostr(info->strid,sizeof(info->strid),oid);
+
   //  print_commit(commit);
   git_commit_free(commit);
 }
@@ -64,9 +74,32 @@ const git_oid* get_head_id(git_repository *repo){
   return oid;
 
 }
+const char * author_holder="$Author$";
+const char * committer_holder="$Committer$";
 int filter_expen(FILE *out,const char*src,int size,const struct commitinfo *info){
-  fprintf(stderr,"expen\n");
-  fwrite(src,size,1,out);
+
+  for(int i=0;i<size;i++){
+	if(src[i]=='$'){
+	  if(i+sizeof(author_holder)>size) {
+		fwrite(src+i,size-i,1,out); //write rest
+
+		return 0;
+	  }
+	  if(strncmp(src+i,author_holder,8)==0){
+		fprintf(out,"$Author: %s <%s>$",info->a_name,info->a_email);
+
+		i += sizeof(author_holder)-1;
+		continue;
+	  }
+	  fputc('$',out);
+	} else {
+	  fputc(src[i],out);
+	}
+  }
+
+  //  fprintf(out,"$Id: %s$",info->strid);
+
+
   return 0;
 }
 int filter_clean(FILE *out,const char*src,int size,const struct commitinfo *info){
@@ -77,6 +110,7 @@ int filter_clean(FILE *out,const char*src,int size,const struct commitinfo *info
 
 int filter(FILE *in,FILE *out,int(*transfer)(FILE*,const char *,int,const struct commitinfo *),const struct commitinfo *info){
   struct bytebuffer buf;
+
   buf_init(&buf);
   while(1){
 	if(transfer){
@@ -95,6 +129,7 @@ int filter(FILE *in,FILE *out,int(*transfer)(FILE*,const char *,int,const struct
 	}
   }
   buf_clean(&buf);
+
   return 0;
 }
 
@@ -109,14 +144,19 @@ int main(int argc,char **argv){
   parse_option(&opt,argc,argv);
   if((repo_root=find_repo_root(opt.dir))!=NULL){
 	struct commitinfo info;
+	int retval;
 	git_libgit2_init();
 	check_error(git_repository_open(&repo,repo_root),gettext("open repository"));
+	buf_init(&bbuf);
 	get_commitinfo(repo,&info,get_head_id(repo));
 	git_repository_free(repo);
 	if(opt.action==CLEAN)
-	  return filter(stdin,stdout,filter_clean,NULL);
+	  retval= filter(stdin,stdout,filter_clean,NULL);
+	else
 	//	return filter(stdin,stdout,NULL,&info);
-	return filter(stdin,stdout,filter_expen,&info);
+	  retval= filter(stdin,stdout,filter_expen,&info);
+	buf_clean(&bbuf);
+	return retval;
   }
   return -1;
 }
