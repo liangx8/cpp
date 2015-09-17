@@ -163,14 +163,23 @@ void show_commit(git_repository *repo){
   git_commit *commit=NULL;
 }
 */
+int foreach_cb(const char *name,void* repo){
+  git_oid oid;
+  char buf[GIT_OID_HEXSZ + 1];
+  check_error(git_reference_name_to_id(&oid,(git_repository*)repo,name),gettext("refname to id"));
+  git_oid_tostr(buf, sizeof(buf), &oid);
+  printf("%s %s\n",buf,name);
+  return 0;
+}
 void show_head(git_repository *repo){
   git_reference *head = NULL;
   int error;
   error = git_repository_head(&head,repo);
-  git_reference_free(head);
   check_error(error,gettext("show head"));
   const char *branch=git_reference_shorthand(head);
+  git_reference_free(head);
   printf(gettext("Current branch:\033[32m%s\033[0m\n"),branch);
+  check_error(git_reference_foreach_name(repo,foreach_cb,(void*)repo),gettext("reference foreach"));
 }
 int main(int argc,char **argv){
   setlocale(LC_ALL,"");
@@ -187,8 +196,8 @@ int main(int argc,char **argv){
 	//error= git_repository_open(&repo,".");
 	check_error(error,gettext("open repository"));
 	aindex(repo);
-	show_head(repo);
 	showlog(repo);
+	show_head(repo);
 	git_repository_free(repo);
   }
 
