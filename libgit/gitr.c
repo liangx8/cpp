@@ -119,6 +119,13 @@ static void print_commit(git_commit *commit)
 	printf("Author: %s <%s>\n", sig->name, sig->email);
 	print_time(&sig->when, "Date:   ");
   }
+
+  if ((sig = git_commit_committer(commit)) != NULL){
+	printf("Committer: %s <%s>\n", sig->name, sig->email);
+	print_time(&sig->when, "Date:   ");
+  } else {
+	printf("Committer message error");
+  }
   printf("\n");
 
   for (scan = git_commit_message(commit); scan && *scan; ) {

@@ -2,19 +2,21 @@
 CC=gcc
 RM=rm -rf
 CFLAGS=-Wall -g
-TARGET=gitr
+TARGET=filter
 
 
-SRCS=${TARGET}.c
+SRCS=${TARGET}.c common.c
 OBJS=${SRCS:.c=.o}
 LDFLAGS=-Wall -g -lgit2 # -static
 
 all:${TARGET}
 	@echo "*** Done ***"
-gitr:gitr.o
+${TARGET}:${OBJS}
+	${CC} -o $@ ${OBJS} ${LDFLAGS}
+test:gitr.o common.o
 	${CC} -o $@ $< ${LDFLAGS}
 clean:
-	${RM} *.o ${TARGET} *~
+	${RM} *.o test ${TARGET} *~
 
 
 .c.o:
