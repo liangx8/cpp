@@ -80,16 +80,19 @@ int filter_expen(FILE *out,const char*src,int size,const struct commitinfo *info
 
   for(int i=0;i<size;i++){
 	if(src[i]=='$'){
-	  if(i+sizeof(author_holder)>size) {
-		fwrite(src+i,size-i,1,out); //write rest
-
-		return 0;
+	  if(i+sizeof(author_holder)<=size) {
+		if(strncmp(src+i,author_holder,8)==0){
+		  fprintf(out,"$Author: %s <%s>$",info->a_name,info->a_email);
+		  i += 7;
+		  continue;
+		}
 	  }
-	  if(strncmp(src+i,author_holder,8)==0){
-		fprintf(out,"$Author: %s <%s>$",info->a_name,info->a_email);
-
-		i += sizeof(author_holder)-1;
-		continue;
+	  if(i+sizeof(committer_holder)<=size){
+		if(strncmp(src+i,committer_holder,11)==0){
+		  fprintf(out,"$Committer: %s <%s>$", info->c_name,info->c_email);
+		  i += 10;
+		  continue;
+		}
 	  }
 	  fputc('$',out);
 	} else {
