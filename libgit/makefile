@@ -5,7 +5,7 @@ CFLAGS=-Wall -g
 TARGET=filter
 
 
-SRCS=${TARGET}.c common.c
+SRCS=${TARGET}.c common.c utils.c
 OBJS=${SRCS:.c=.o}
 LDFLAGS=-Wall -g -lgit2 # -static
 

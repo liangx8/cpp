@@ -6,5 +6,7 @@
 *.po
 *.pot
 libusb/*
-*.[o~]
+*.o
+*~
 *.exe
+.gitattributes

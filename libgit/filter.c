@@ -4,7 +4,7 @@
 #include <libintl.h>
 #include <string.h>
 #include <errno.h>
-
+#include "utils.h"
 #include "common.h"
 #define LOCALEDIR "locale/"
 #define PACKAGE "filter"
@@ -25,21 +25,22 @@ struct commitinfo{
   const char *a_name,*a_email;
   const char* message;
   char strid[GIT_OID_HEXSZ+1];
+  buffer *b;
 };
 
-static struct bytebuffer bbuf;
+
 static void get_commitinfo(git_repository *repo,struct commitinfo *info,const git_oid *oid){
   //  print_id(id);
   git_commit *commit;
   const git_signature *sig;
   check_error(git_commit_lookup(&commit,repo,oid),gettext("lookup commit"));
   sig=git_commit_author(commit);
-  info->a_name=buf_strcpy(&bbuf,sig->name);
-  info->a_email=buf_strcpy(&bbuf,sig->email);
+  info->a_name=buf_dup(info->b,sig->name);
+  info->a_email=buf_dup(info->b,sig->email);
   sig=git_commit_committer(commit);
-  info->c_name=buf_strcpy(&bbuf,sig->name);
-  info->c_email=buf_strcpy(&bbuf,sig->email);
-  info->message=git_commit_message(commit);
+  info->c_name=buf_dup(info->b,sig->name);
+  info->c_email=buf_dup(info->b,sig->email);
+  info->message=buf_dup(info->b,git_commit_message(commit));
   
   git_oid_tostr(info->strid,sizeof(info->strid),oid);
 
@@ -100,7 +101,7 @@ int filter_expen(FILE *out,const char*src,int size,const struct commitinfo *info
 	}
   }
 
-  //  fprintf(out,"$Id: %s$",info->strid);
+  //  fprintf(out,"$Id$",info->strid);
 
 
   return 0;
@@ -112,17 +113,17 @@ int filter_clean(FILE *out,const char*src,int size,const struct commitinfo *info
 }
 
 int filter(FILE *in,FILE *out,int(*transfer)(FILE*,const char *,int,const struct commitinfo *),const struct commitinfo *info){
-  struct bytebuffer buf;
 
-  buf_init(&buf);
+  buffer *buf=buf_new();
+
   while(1){
 	if(transfer){
 	  int c=fgetc(in);
 	  if(c==EOF)break;
-	  buf_add(&buf,c);
+	  buf_add_char(buf,c);
 	  if(c=='\n'){
-		transfer(out,buf.head,buf.size,info);
-		buf_reset(&buf);
+		transfer(out,buf_to_cstr(buf),buf_size(buf),info);
+		buf_reset(buf);
 	  }
 	}else{
 	  //根据测试，这里还是按单字节看待文件流
@@ -131,7 +132,7 @@ int filter(FILE *in,FILE *out,int(*transfer)(FILE*,const char *,int,const struct
 	  fputc(c,out);
 	}
   }
-  buf_clean(&buf);
+  buf_free(buf);
 
   return 0;
 }
@@ -150,7 +151,7 @@ int main(int argc,char **argv){
 	int retval;
 	git_libgit2_init();
 	check_error(git_repository_open(&repo,repo_root),gettext("open repository"));
-	buf_init(&bbuf);
+	info.b=buf_new();
 	get_commitinfo(repo,&info,get_head_id(repo));
 	git_repository_free(repo);
 	if(opt.action==CLEAN)
@@ -158,7 +159,7 @@ int main(int argc,char **argv){
 	else
 	//	return filter(stdin,stdout,NULL,&info);
 	  retval= filter(stdin,stdout,filter_expen,&info);
-	buf_clean(&bbuf);
+	buf_free(info.b);
 	return retval;
   }
   return -1;
