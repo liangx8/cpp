@@ -1,7 +1,7 @@
 CC=gcc
 FLAG=-Wall -g
 CFLAG=${FLAG}
-OBJS=utils.o main.o
+OBJS=utils.o linked.o btree.o main.o
 TARGET=main
 all:$(TARGET)
 	@echo "*** Done ***"
