@@ -1,3 +1,8 @@
+/*
+ * $Author$
+ * $Committer$
+ */
+
 #include <stdio.h>
 #include <locale.h>
 #include <git2.h>
@@ -29,10 +34,17 @@ struct commitinfo{
 };
 
 
-static void get_commitinfo(git_repository *repo,struct commitinfo *info,const git_oid *oid){
-  //  print_id(id);
+static void get_commitinfo(git_repository *repo,struct commitinfo *info){
+
   git_commit *commit;
   const git_signature *sig;
+  git_reference *head=NULL;
+  const git_oid *oid;
+  check_error(git_repository_head(&head,repo),gettext("Get Head"));
+  oid=git_reference_target(head);
+
+
+
   check_error(git_commit_lookup(&commit,repo,oid),gettext("lookup commit"));
   sig=git_commit_author(commit);
   info->a_name=buf_dup(info->b,sig->name);
@@ -43,7 +55,7 @@ static void get_commitinfo(git_repository *repo,struct commitinfo *info,const gi
   info->message=buf_dup(info->b,git_commit_message(commit));
   
   git_oid_tostr(info->strid,sizeof(info->strid),oid);
-
+  git_reference_free(head);
   //  print_commit(commit);
   git_commit_free(commit);
 }
@@ -66,32 +78,23 @@ static void parse_option(struct options *opt,int argc,char **argv){
 	}
   }
 }
-const git_oid* get_head_id(git_repository *repo){
-  git_reference *head=NULL;
-  const git_oid *oid;
-  check_error(git_repository_head(&head,repo),gettext("Get Head"));
-  oid=git_reference_target(head);
-  git_reference_free(head);
-  return oid;
-
-}
-const char * author_holder="$Author$";
-const char * committer_holder="$Committer$";
+const char author_holder[]="$""Author$";
+const char committer_holder[]="$""Committer$";
 int filter_expen(FILE *out,const char*src,int size,const struct commitinfo *info){
 
   for(int i=0;i<size;i++){
 	if(src[i]=='$'){
 	  if(i+sizeof(author_holder)<=size) {
-		if(strncmp(src+i,author_holder,8)==0){
-		  fprintf(out,"$Author: %s <%s>$",info->a_name,info->a_email);
-		  i += 7;
+		if(strncmp(src+i,author_holder,sizeof(author_holder)-1)==0){
+		  fprintf(out,"$""Author: %s <%s>$",info->a_name,info->a_email);
+		  i += sizeof(author_holder)-2;
 		  continue;
 		}
 	  }
 	  if(i+sizeof(committer_holder)<=size){
-		if(strncmp(src+i,committer_holder,11)==0){
-		  fprintf(out,"$Committer: %s <%s>$", info->c_name,info->c_email);
-		  i += 10;
+		if(strncmp(src+i,committer_holder,sizeof(committer_holder)-1)==0){
+		  fprintf(out,"$""Committer: %s <%s>$", info->c_name,info->c_email);
+		  i += sizeof(committer_holder)-2;
 		  continue;
 		}
 	  }
@@ -101,14 +104,35 @@ int filter_expen(FILE *out,const char*src,int size,const struct commitinfo *info
 	}
   }
 
-  //  fprintf(out,"$Id$",info->strid);
-
 
   return 0;
 }
 int filter_clean(FILE *out,const char*src,int size,const struct commitinfo *info){
-  fprintf(stderr,"clean\n");
-  fwrite(src,size,1,out);
+  const char *holders[]={author_holder,committer_holder};
+  const size_t sizes[]={sizeof(author_holder),sizeof(committer_holder)};
+  for(size_t i=0;i<size;i++){
+	if(src[i]=='$'){
+	  for(int x=0;x<2;x++){
+
+		if(strncmp(src+i,holders[x],sizes[x]-2)==0){
+		  int found=0;
+		  for(int j=1+i;j<size;j++){
+			if(src[j]=='$') {
+			  found=1;
+			  i=j+1;
+			  break;
+			}
+		  }
+		  if(found){
+			fprintf(out,holders[x]);
+			break;
+		  } 
+		}
+	  }
+	}
+	fputc(src[i],out);
+  }
+
   return 0;
 }
 
@@ -152,7 +176,7 @@ int main(int argc,char **argv){
 	git_libgit2_init();
 	check_error(git_repository_open(&repo,repo_root),gettext("open repository"));
 	info.b=buf_new();
-	get_commitinfo(repo,&info,get_head_id(repo));
+	get_commitinfo(repo,&info);
 	git_repository_free(repo);
 	if(opt.action==CLEAN)
 	  retval= filter(stdin,stdout,filter_clean,NULL);
