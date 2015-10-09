@@ -1,5 +1,5 @@
 CC=gcc
-TARGET=mathpng
+TARGET=../bin/mathpng
 OBJS=mathpng.o
 
 CFLAGS=

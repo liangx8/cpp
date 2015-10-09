@@ -2,7 +2,7 @@
 CC=gcc
 RM=rm -rf
 CFLAGS=-Wall -g
-TARGET=color char
+TARGET=../bin/color ../bin/char
 
 
 SRCS=${TARGET}.c
@@ -11,9 +11,9 @@ LDFLAGS=-Wall -g # -static
 
 all:${TARGET}
 	@echo "*** Done ***"
-char:char.o
+../bin/char:char.o
 	${CC} -o $@ $< ${LDFLAGS}
-color:color.o
+../bin/color:color.o
 	${CC} -o $@ $< ${LDFLAGS}
 clean:
 	${RM} *.o ${TARGET} *~

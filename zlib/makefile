@@ -2,7 +2,7 @@
 CC=gcc
 RM=rm -rf
 CFLAGS=-Wall -g
-TARGET=z
+TARGET=../bin/z
 
 
 SRCS=${TARGET}.c

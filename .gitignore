@@ -10,3 +10,4 @@ libusb/*
 *~
 *.exe
 .gitattributes
+bin/*

@@ -2,7 +2,7 @@
 CC=g++
 RM=rm -rf
 CFLAGS=-Wall -g
-TARGET=chemical
+TARGET=../bin/chemical
 
 
 SRCS=chemical.cc data.cc
@@ -19,7 +19,7 @@ ${TARGET}:${OBJS}
 	${CC} -o $@ ${OBJS} ${LDFLAGS}
 clean:
 	${RM} *.o ${TARGET}
-	
+
 .cc.o:
 	${CC} -c $< ${CFLAGS}
 

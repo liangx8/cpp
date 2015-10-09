@@ -9,14 +9,14 @@ SRCS=${TARGET}.c common.c utils.c learning.c
 OBJS=${SRCS:.c=.o}
 LDFLAGS=-Wall -g -lgit2 # -static
 
-all:${TARGET}
+all:../bin/${TARGET}
 	@echo "*** Done ***"
-${TARGET}:${OBJS}
+../bin/${TARGET}:${OBJS}
 	${CC} -o $@ ${OBJS} ${LDFLAGS}
 test:gitr.o common.o
 	${CC} -o $@ $< ${LDFLAGS}
 clean:
-	${RM} *.o test ${TARGET} *~
+	${RM} *.o test ../bin/${TARGET} *~
 
 
 .c.o:

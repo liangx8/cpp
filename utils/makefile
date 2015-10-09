@@ -2,7 +2,7 @@ CC=gcc
 FLAG=-Wall -g
 CFLAG=${FLAG}
 OBJS=utils.o linked.o btree.o main.o
-TARGET=main
+TARGET=../bin/main
 all:$(TARGET)
 	@echo "*** Done ***"
 $(TARGET):${OBJS}

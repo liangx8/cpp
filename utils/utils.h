@@ -19,15 +19,14 @@ const char* buf_dup(buffer *b,const char* src);
 
 // array
 
-type struct _array array;
+typedef struct _array array;
 
 array* ary_new(int);
 void ary_free();
 void ary_size();
-// size of unit
-int ary_uom();
+
 void ary_add(void *);
-int *ary_get(int);
+int *ary_get(int,void **);
 int *ary_set(int,void *); 
 
 
