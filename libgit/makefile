@@ -2,7 +2,7 @@
 CC=gcc
 RM=rm -rf
 CFLAGS=-Wall -g
-TARGET=filter
+TARGET=mgit
 
 
 SRCS=${TARGET}.c common.c utils.c learning.c
