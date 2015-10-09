@@ -1,14 +1,17 @@
 /*
+ * $Id$
  * $Author$
  * $Committer$
  */
-
+#define _GNU_SOURCE
 #include <stdio.h>
 #include <locale.h>
 #include <git2.h>
 #include <libintl.h>
 #include <string.h>
 #include <errno.h>
+#include <getopt.h>
+#include <assert.h>
 #include "utils.h"
 #include "common.h"
 #define LOCALEDIR "locale/"
@@ -18,21 +21,24 @@
 #define UNICODE
 #endif
 
-#define CLEAN  0
-#define EXPEN  1
+#define FILTER_MASK 0x02
+#define FILTER_MODE_MASK 0x01
+#define CLEAN  0x01
+#define EXPEN  0x00
 
 struct options{
   int action;
   const char *dir;
 };
+
 struct commitinfo{
   const char *c_name,*c_email;
   const char *a_name,*a_email;
-  const char* message;
+  const char *message;
+  const char *head_ref_name;
   char strid[GIT_OID_HEXSZ+1];
   buffer *b;
 };
-
 
 static void get_commitinfo(git_repository *repo,struct commitinfo *info){
 
@@ -43,8 +49,6 @@ static void get_commitinfo(git_repository *repo,struct commitinfo *info){
   check_error(git_repository_head(&head,repo),gettext("Get Head"));
   oid=git_reference_target(head);
 
-
-
   check_error(git_commit_lookup(&commit,repo,oid),gettext("lookup commit"));
   sig=git_commit_author(commit);
   info->a_name=buf_dup(info->b,sig->name);
@@ -53,30 +57,66 @@ static void get_commitinfo(git_repository *repo,struct commitinfo *info){
   info->c_name=buf_dup(info->b,sig->name);
   info->c_email=buf_dup(info->b,sig->email);
   info->message=buf_dup(info->b,git_commit_message(commit));
-  
+  info->head_ref_name=buf_dup(info->b,git_reference_name(head));
   git_oid_tostr(info->strid,sizeof(info->strid),oid);
   git_reference_free(head);
   //  print_commit(commit);
   git_commit_free(commit);
 }
-static void parse_option(struct options *opt,int argc,char **argv){
-  opt->action=EXPEN;
-  opt->dir=".";
-  for(int i=1;i<argc;i++){
-	if(argv[i][0]=='-'){
-	  switch(argv[i][1]){
+static void filter_usage(){
+  printf("%s\n",gettext("Filter mode: expend/clean the place holder from stdin to stdout"));
+  printf("filter [-c|-e]\n");
+  printf("\t -c, %s\n",gettext("clean place holder"));
+  printf("\t -e, %s\n",gettext("expend place holder"));
+}
+static int parse_option(struct options *opt,int argc,char **argv){
+  int optc;
+  assert(opt);
+  opt->action=0;
+
+  if (strcmp(basename(argv[0]),"filter")==0){
+	opt->action |= FILTER_MASK;
+  }
+
+  if(opt->action & FILTER_MASK){
+	while(1){
+	  optc=getopt(argc,argv,"ce");
+	  if(optc==-1) break;
+	  switch(optc){
 	  case 'c':
-		opt->action=CLEAN;
+		opt->action |= FILTER_MODE_MASK;
+		opt->action |= CLEAN;
 		break;
 	  case 'e':break;
 	  default:
-		printf(gettext("invalid option %s\n"),argv[i]);
-		exit(-1);
+		filter_usage();
+		return -1;
 	  }
-	} else {
-	  opt->dir=argv[i];
+	}
+	opt->dir=find_repo_root(NULL);// find repository from current directory
+	if(opt->dir==NULL) {
+	  return -1;
+	}
+	return 0;
+  }
+  while(1){
+	optc=getopt(argc,argv,"p:");
+	if(optc==-1)break;
+	switch(optc){
+	case 'p':
+	  opt->dir=find_repo_root(optarg);
+	  if(opt->dir==NULL) {
+		return -1;
+	  }
 	}
   }
+  if(!opt->dir){
+	  opt->dir=find_repo_root(NULL);
+	  if(opt->dir==NULL) {
+		return -1;
+	  }
+  }
+  return 0;
 }
 const char author_holder[]="$""Author$";
 const char committer_holder[]="$""Committer$";
@@ -160,31 +200,36 @@ int filter(FILE *in,FILE *out,int(*transfer)(FILE*,const char *,int,const struct
 
   return 0;
 }
-
+void learning_libgit(git_repository *);
 int main(int argc,char **argv){
-  const char* repo_root;
+  //const char* repo_root;
   git_repository *repo=NULL;
   struct options opt;
   setlocale(LC_ALL,"");
   bindtextdomain(PACKAGE,LOCALEDIR);
   textdomain(PACKAGE);
 
-  parse_option(&opt,argc,argv);
-  if((repo_root=find_repo_root(opt.dir))!=NULL){
-	struct commitinfo info;
-	int retval;
-	git_libgit2_init();
-	check_error(git_repository_open(&repo,repo_root),gettext("open repository"));
-	info.b=buf_new();
-	get_commitinfo(repo,&info);
+  if(parse_option(&opt,argc,argv)<0){
+	return -1;
+  }
+
+
+  struct commitinfo info;
+  int retval;
+  git_libgit2_init();
+  check_error(git_repository_open(&repo,opt.dir),gettext("open repository"));
+  info.b=buf_new();
+  get_commitinfo(repo,&info);
+
+  if(opt.action&FILTER_MASK){
 	git_repository_free(repo);
-	if(opt.action==CLEAN)
+	if((opt.action & FILTER_MODE_MASK)==CLEAN)
 	  retval= filter(stdin,stdout,filter_clean,NULL);
 	else
-	//	return filter(stdin,stdout,NULL,&info);
 	  retval= filter(stdin,stdout,filter_expen,&info);
-	buf_free(info.b);
 	return retval;
   }
-  return -1;
+  learning_libgit(repo);
+  git_repository_free(repo);
+  buf_free(info.b);
 }

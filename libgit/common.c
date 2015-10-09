@@ -1,4 +1,7 @@
 #include <stdio.h>
+#include <assert.h>
+#include <unistd.h>
+#include <libgen.h> //dirname()
 #include <libintl.h>
 #include <string.h> // strerror
 //#include <git2.h>
@@ -27,7 +30,7 @@ static int recur_repo_path(){
   }
   struct dirent *child=readdir(parent);
   while(child){
-	//	printf("%s--%s\n",repo_root,child->d_name);
+	//printf("%s--%s\n",repo_root,child->d_name);
 	if((strlen(child->d_name)==4)
 	   && (strncmp(".git",child->d_name,4)==0)){
 	  closedir(parent);
@@ -36,13 +39,33 @@ static int recur_repo_path(){
 	child=readdir(parent);
   }
   closedir(parent);
-  strcat(repo_root,"/..");
+  strcpy(repo_root,dirname(repo_root));
+  if(repo_root[0]=='/' && repo_root[1]=='\0'){
+	return -1;
+  }
   return recur_repo_path();
 }
 const char* find_repo_root(const char *p){
-  repo_root[0]='\0';
-  strcat(repo_root,p);
-  if(recur_repo_path())
+  char *pp;
+  int freepp;
+  if(p){
+	pp=realpath(p,NULL);
+	if(pp){
+	  freepp=1;
+	  strncpy(repo_root,pp,512);
+	} else {
+	  fprintf(stderr,gettext("get realpath error:%s\n"),strerror(errno));
+	  return NULL;
+	}
+  } else {
+	pp=getcwd(repo_root,512);
+	assert(pp==repo_root);
+  }
+  if(recur_repo_path()){
+	fprintf(stderr,"'%s'%s\n",pp,gettext(" is not a git repository (or any of the parent directories)"));
+	if(freepp)free(pp);
 	return NULL;
+  }
+  if(freepp)free(pp);
   return repo_root;
 }
