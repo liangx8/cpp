@@ -1,4 +1,6 @@
 #include <stdio.h>
+#include <stdlib.h> // srand(),rand()
+#include <time.h> // time()
 #include <assert.h>
 #include "utils.h"
 void test_buf(){
@@ -47,7 +49,41 @@ void test_linked(){
   
   lnk_free(lnk);
 }
+
+int cmp(void *l,void *r){
+  return (long)r-(long)l;
+}
+void cb(void *obj){
+  printf("%ld ",(long)obj);
+}
+void test_array(){
+  printf("arry test\n");
+  array *ary=ary_new();
+  srand(time(NULL));
+  for(int i=0;i<20;i++){
+	ary_add(ary,(void*)(long)(rand()%1000));
+	
+  }
+  for(size_t i=0;i<ary_size(ary);i++){
+	void *out;
+	ary_get(ary,i,&out);
+	printf("%ld ",(long)out);
+  }
+  ary_sort(ary,cmp);
+  printf("\n");
+  for(size_t i=0;i<ary_size(ary);i++){
+	void *out;
+	ary_get(ary,i,&out);
+	printf("%ld ",(long)out);
+  }
+//typedef void (*extrusion_cb)(void *);
+  printf("\n");
+  ary_resize(ary,10,cb);
+  printf("\n");
+  ary_free(ary);
+}
 int main(){
   test_buf();
   test_linked();
+  test_array();
 }

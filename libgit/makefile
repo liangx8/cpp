@@ -5,7 +5,7 @@ CFLAGS=-Wall -g
 TARGET=mgit
 
 
-SRCS=${TARGET}.c common.c utils.c learning.c
+SRCS=${TARGET}.c common.c buffer.c learning.c array.c
 OBJS=${SRCS:.c=.o}
 LDFLAGS=-Wall -g -lgit2 # -static
 
