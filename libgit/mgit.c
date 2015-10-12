@@ -25,10 +25,12 @@
 #define FILTER_MODE_MASK 0x01
 #define CLEAN  0x01
 #define EXPEN  0x00
+#define ORDER_BIT 0x02
 
 struct options{
   int action;
   const char *dir;
+  int limit;
 };
 
 struct commitinfo{
@@ -99,8 +101,10 @@ static int parse_option(struct options *opt,int argc,char **argv){
 	}
 	return 0;
   }
+  opt->dir=NULL;
+  opt->limit=20;
   while(1){
-	optc=getopt(argc,argv,"p:");
+	optc=getopt(argc,argv,"p:r:n:");
 	if(optc==-1)break;
 	switch(optc){
 	case 'p':
@@ -108,6 +112,15 @@ static int parse_option(struct options *opt,int argc,char **argv){
 	  if(opt->dir==NULL) {
 		return -1;
 	  }
+	  break;
+	case 'n':
+	  opt->action |= 1 << ORDER_BIT;
+	  opt->limit=atoi(optarg);
+	  break;
+	case 'r':
+	  opt->action =0;
+	  opt->limit=atoi(optarg);
+	  break;
 	}
   }
   if(!opt->dir){
@@ -200,6 +213,50 @@ int filter(FILE *in,FILE *out,int(*transfer)(FILE*,const char *,int,const struct
 
   return 0;
 }
+
+struct myobj{
+  git_otype otype;
+  char strid[GIT_OID_HEXSZ+1];
+  size_t size;
+};
+
+void list_obj(git_repository *repo,compare cmp,int limit){
+  git_odb *odb;
+  array *ary=ary_new();
+
+  void obj_free(void *o){
+	free(o);
+  }
+  int each_object(const git_oid *id,void *pl){
+	git_odb_object *out;
+	check_error(git_odb_read(&out,odb,id),"odb_read");
+	struct myobj *mo=(struct myobj *)malloc(sizeof(struct myobj));
+	mo->size=git_odb_object_size(out);
+	git_oid_tostr(mo->strid,GIT_OID_HEXSZ+1,id);
+	mo->otype=git_odb_object_type(out);
+	git_odb_object_free(out);
+	ary_add(ary,mo);
+	return 0;
+  }
+  check_error(git_repository_odb(&odb,repo),"repository odb");
+  git_odb_foreach(odb,each_object,NULL);
+  git_odb_free(odb);
+  ary_sort(ary,cmp);
+  ary_resize(ary,limit,obj_free);
+  for(size_t i=0;i<ary_size(ary);i++){
+	struct myobj *out;
+	ary_get(ary,i,(void **)&out);
+	printf("%05ld: %s %5ld %s\n",i,out->strid,out->size,git_object_type2string(out->otype));
+	free (out);
+  }
+  ary_free(ary);
+}
+int cmp(void *l,void *r){
+  struct myobj *lv,*rv;
+  lv=(struct myobj*)l;
+  rv=(struct myobj*)r;
+  return rv->size-lv->size;
+}
 void learning_libgit(git_repository *);
 int main(int argc,char **argv){
   //const char* repo_root;
@@ -229,7 +286,12 @@ int main(int argc,char **argv){
 	  retval= filter(stdin,stdout,filter_expen,&info);
 	return retval;
   }
-  learning_libgit(repo);
+  //  learning_libgit(repo);
+  if(opt.action & 1<< ORDER_BIT){
+	list_obj(repo,cmp,opt.limit);
+  } else {
+	list_obj(repo,cmp,opt.limit);
+  }
   git_repository_free(repo);
   buf_free(info.b);
 }

@@ -48,39 +48,14 @@ int each_object(const git_oid *id, void *payload){
   //printf("%05d: %s %5ld%c %s\n",p->count++,strid,osize,uom,git_object_type2string(otype));
   return 0;
 }
-int cmp(void *l,void *r){
-  struct object *lv,*rv;
-  lv=(struct object*)l;
-  rv=(struct object*)r;
-  return rv->size-lv->size;
-}
+
 void obj_free(void *o){
   free(o);
 }
 void print_obj(struct object *obj,size_t seq){
   printf("%05ld: %s %5ld %s\n",seq,obj->strid,obj->size,git_object_type2string(obj->otype));
 }
-void odb_details(git_repository *repo){
-  struct pl payload;
-  payload.count=0;
-  payload.ary=ary_new();
-  check_error(git_repository_odb(&payload.odb,repo),"repository odb");
-
-  git_odb_foreach(payload.odb,each_object,&payload);
-  git_odb_free(payload.odb);
-
-  ary_sort(payload.ary,cmp);
-  ary_resize(payload.ary,20,obj_free);
-  for(size_t i=0;i<ary_size(payload.ary);i++){
-	void *out;
-	ary_get(payload.ary,i,&out);
-	print_obj((struct object*)out,i);
-	free(out);
-  }
-
-  ary_free(payload.ary);
-}
 void learning_libgit(git_repository *repo){
   git_reference_foreach(repo,ref_callback,NULL);
-  odb_details(repo);
+
 }
