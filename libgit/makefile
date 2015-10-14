@@ -1,11 +1,11 @@
 .PHONY: clean
 CC=gcc
 RM=rm -rf
-CFLAGS=-Wall -g
+CFLAGS=-Wall -g -I ../utils
 TARGET=mgit
 
 
-SRCS=${TARGET}.c common.c buffer.c learning.c array.c
+SRCS=${TARGET}.c common.c ../utils/buffer.c learning.c ../utils/array.c history.c
 OBJS=${SRCS:.c=.o}
 LDFLAGS=-Wall -g -lgit2 # -static
 

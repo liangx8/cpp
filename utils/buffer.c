@@ -8,14 +8,14 @@
 #include <stdio.h>
 #include <malloc.h>
 #include <string.h>
-
+#include <assert.h>
 #include "utils.h"
 #define BUFFER_BLOCKSZ  256
 
 struct _buffer {
   char *head;
-  int size;
-  int capacity;
+  size_t size;
+  size_t capacity;
 };
 
 
@@ -42,8 +42,8 @@ void buf_add_char(buffer *b,char c){
 	b->head=realloc(b->head,b->capacity);
   }
 }
-void buf_add_n(buffer *b,const char *src,int n){
-  int size=b->size + n;
+void buf_add_n(buffer *b,const char *src,size_t n){
+  size_t size=b->size + n;
   if(size >= b->capacity){
 	b->capacity = (size / BUFFER_BLOCKSZ + 1)*BUFFER_BLOCKSZ;
 	b->head=realloc(b->head,b->capacity);
@@ -53,8 +53,8 @@ void buf_add_n(buffer *b,const char *src,int n){
   strncpy(b->head+b->size,src,n);
   b->size=size;
 }
-int buf_add_cstr(buffer *b,const char *cstr){
-  int len=strlen(cstr);
+size_t buf_add_cstr(buffer *b,const char *cstr){
+  size_t len=strlen(cstr);
   buf_add_n(b,cstr,len);
   return len;
 }
@@ -62,14 +62,14 @@ const char* buf_to_cstr(const buffer *b){
   b->head[b->size]='\0';
   return b->head;
 }
-int buf_size(const buffer *b){
+size_t buf_size(const buffer *b){
   return b->size;
 }
-int buf_printf(buffer *b,const char *format,...){
+size_t buf_printf(buffer *b,const char *format,...){
   char *strp;
   va_list ap;
   va_start(ap,format);
-  int len=vasprintf(&strp,format,ap);
+  size_t len=vasprintf(&strp,format,ap);
   va_end(ap);
   buf_add_n(b,strp,len);
   free(strp);
@@ -77,8 +77,29 @@ int buf_printf(buffer *b,const char *format,...){
 }
 // the return value is available until b is destoryed
 const char* buf_dup(buffer *b,const char* src){
-  int idx=b->size;
+  size_t idx=b->size;
   buf_add_cstr(b,src);
   buf_add_char(b,'\0');
+  return b->head+idx;
+}
+const char* buf_split(buffer *b,const char*src,int split,size_t *start){
+  size_t idx=b->size;
+  assert(start);
+
+  if(src[*start]=='\0') return NULL;
+  while(1){
+
+	if(src[*start]==split){
+	  buf_add_char(b,'\0');
+	  (*start)++;
+	  break;
+	}
+	buf_add_char(b,src[*start]);
+	(*start)++;
+	if(src[*start]=='\0'){
+	  buf_add_char(b,'\0');
+	  break;
+	}
+  }
   return b->head+idx;
 }

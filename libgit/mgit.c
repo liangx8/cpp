@@ -21,16 +21,19 @@
 #define UNICODE
 #endif
 
-#define FILTER_MASK 0x02
-#define FILTER_MODE_MASK 0x01
-#define CLEAN  0x01
-#define EXPEN  0x00
-#define ORDER_BIT 0x02
+#define FILTER_MODE_BIT      0x00
+#define CLEAN                0x01
+#define EXPEN                0x00
+#define FILTER_BIT           0x01
+#define LIST_BIT             0x02
+#define ORDER_BIT            0x03
+#define LIST_HISTORY_BIT     0x04
 
 struct options{
   int action;
   const char *dir;
   int limit;
+  const char *list_root;
 };
 
 struct commitinfo{
@@ -77,16 +80,16 @@ static int parse_option(struct options *opt,int argc,char **argv){
   opt->action=0;
 
   if (strcmp(basename(argv[0]),"filter")==0){
-	opt->action |= FILTER_MASK;
+	opt->action |= 1<<FILTER_BIT;
   }
 
-  if(opt->action & FILTER_MASK){
+  if(opt->action & (1<<FILTER_BIT)){
 	while(1){
 	  optc=getopt(argc,argv,"ce");
 	  if(optc==-1) break;
 	  switch(optc){
 	  case 'c':
-		opt->action |= FILTER_MODE_MASK;
+		//opt->action |= (1<<FILTER_BIT);
 		opt->action |= CLEAN;
 		break;
 	  case 'e':break;
@@ -104,7 +107,7 @@ static int parse_option(struct options *opt,int argc,char **argv){
   opt->dir=NULL;
   opt->limit=20;
   while(1){
-	optc=getopt(argc,argv,"p:r:n:");
+	optc=getopt(argc,argv,"p:r:n:l:");
 	if(optc==-1)break;
 	switch(optc){
 	case 'p':
@@ -114,13 +117,20 @@ static int parse_option(struct options *opt,int argc,char **argv){
 	  }
 	  break;
 	case 'n':
-	  opt->action |= 1 << ORDER_BIT;
+	  opt->action = (1 << LIST_BIT)+EXPEN;
 	  opt->limit=atoi(optarg);
 	  break;
 	case 'r':
-	  opt->action =0;
+  	  opt->action = (1 << LIST_BIT)+CLEAN;
 	  opt->limit=atoi(optarg);
 	  break;
+	case 'l':
+	  opt->action = 1 << LIST_HISTORY_BIT;
+	  opt->list_root=optarg;
+	  break;
+	case '?':
+	  printf("%s\n",gettext("wrong options"));
+	  exit(-1);
 	}
   }
   if(!opt->dir){
@@ -258,6 +268,7 @@ int cmp(void *l,void *r){
   return rv->size-lv->size;
 }
 void learning_libgit(git_repository *);
+void list_history(git_repository *,const char *(*)());
 int main(int argc,char **argv){
   //const char* repo_root;
   git_repository *repo=NULL;
@@ -278,19 +289,30 @@ int main(int argc,char **argv){
   info.b=buf_new();
   get_commitinfo(repo,&info);
 
-  if(opt.action&FILTER_MASK){
+  if(opt.action&(1<<FILTER_BIT)){
 	git_repository_free(repo);
-	if((opt.action & FILTER_MODE_MASK)==CLEAN)
+	if((opt.action & (1<<FILTER_MODE_BIT))==CLEAN)
 	  retval= filter(stdin,stdout,filter_clean,NULL);
 	else
 	  retval= filter(stdin,stdout,filter_expen,&info);
 	return retval;
   }
   //  learning_libgit(repo);
-  if(opt.action & 1<< ORDER_BIT){
-	list_obj(repo,cmp,opt.limit);
-  } else {
-	list_obj(repo,cmp,opt.limit);
+  if(opt.action & (1<< LIST_BIT)){
+	if(opt.action & (1<< ORDER_BIT)){
+	  list_obj(repo,cmp,opt.limit);
+	} else {
+	  list_obj(repo,cmp,opt.limit);
+	}
+  }
+  if(opt.action & (1<< LIST_HISTORY_BIT)){
+	buffer *b=info.b;
+	size_t start=0;
+	const char *next(){
+	  return buf_split(b,opt.list_root,'/',&start);
+	}
+	buf_reset(b);
+	list_history(repo,next);
   }
   git_repository_free(repo);
   buf_free(info.b);

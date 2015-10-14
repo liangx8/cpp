@@ -72,6 +72,16 @@ int ary_sort(array* ary,compare cmp){
   bubble_sort(ary,cmp);
   return 0;
 }
+int ary_find(array *ary,void *key,void **out,compare cmp){
+  for(size_t i=0;i<ary->size;i++){
+	if(cmp(ary->ar[i],key)==0){
+	  if(out)
+		*out=ary->ar[i];
+	  return i;
+	}
+  }
+  return -1;
+}
 // size 重新设置大小
 // callback 多余出来的对象被callback调用,一般用于释放
 void ary_resize(array* ary,size_t size,extrusion_cb callback){
@@ -89,4 +99,11 @@ void ary_resize(array* ary,size_t size,extrusion_cb callback){
   }
 }
 
-  
+int ary_foreach(array *ary, int (*each_cb)(void *)){
+  for(size_t i=0;i<ary->size;i++){
+	int r;
+	r=each_cb(ary->ar[i]);
+	if(r) return r;
+  }
+  return 0;
+}
