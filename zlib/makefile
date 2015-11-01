@@ -5,13 +5,13 @@ CFLAGS=-Wall -g
 TARGET=../bin/z
 
 
-SRCS=${TARGET}.c
+SRCS=z.c
 OBJS=${SRCS:.c=.o}
 LDFLAGS=-Wall -g -lz # -static
 
 all:${TARGET}
 	@echo "*** Done ***"
-gitr:gitr.o
+${TARGET}:z.o
 	${CC} -o $@ $< ${LDFLAGS}
 clean:
 	${RM} *.o ${TARGET} *~
