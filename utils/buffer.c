@@ -82,6 +82,7 @@ const char* buf_dup(buffer *b,const char* src){
   buf_add_char(b,'\0');
   return b->head+idx;
 }
+// 把src中的内容由split一个个提取出来,由buf管理
 const char* buf_split(buffer *b,const char*src,int split,size_t *start){
   size_t idx=b->size;
   assert(start);

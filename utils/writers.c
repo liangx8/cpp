@@ -71,10 +71,11 @@ int wrt_close(writers *io){
   ary_foreach(io->ios,each_cb);
   ary_free(io->ios);
   free(io);
+  return 0;
 }
 int wrt_printf(writers *wrt,const char *format,...){
   va_list ap;
-  int i=0;
+
   int each_cb(void *p){
 	assert(p);
 	struct sio *io1=(struct sio*)p;
@@ -104,6 +105,6 @@ int wrt_printf(writers *wrt,const char *format,...){
   va_end(ap);
   fclose(dummy);
 
-
   ary_foreach(wrt->ios,each_cb);
+  return 0;
 }

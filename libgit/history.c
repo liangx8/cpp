@@ -13,6 +13,7 @@ struct nodeinfo{
   git_time atime;//author time
   git_time ctime;//committer time
 };
+extern writers *wrt;
 void print_node(struct nodeinfo *p){
   char strid[GIT_OID_HEXSZ+1];
   char tout[32];
@@ -44,10 +45,12 @@ void commit_walk(git_commit *cmt,array *ary){
   check_error(git_commit_tree(&tree,cmt),gettext("commit tree"));
   const git_signature *author,*committer;
   const git_oid *cmt_id=git_commit_id(cmt);
+  char strid[GIT_OID_HEXSZ+1];
   int treewalk_cb(const char *root,const git_tree_entry *entry,void *payload){
 	const git_oid *eid=git_tree_entry_id(entry);
 	int each_cb(void *obj){
 	  struct nodeinfo *nd=(struct nodeinfo*)obj;
+
 	  if(git_oid_cmp(&(nd->oid),eid)==0){
 		git_oid_cpy(&(nd->cmt_id),cmt_id);
 		nd->atime.time=author->when.time;
@@ -73,7 +76,9 @@ void commit_walk(git_commit *cmt,array *ary){
 	git_commit_free(parent);
   }
 
-
+  git_oid_tostr(strid,12,cmt_id);
+  wrt_printf(wrt,"%s:%5d: %s %s\n",__FILE__,__LINE__,strid,git_commit_message(cmt));
+  wrt_printf(wrt,"%s:%5d: parent count:%d\n",__FILE__,__LINE__,parent_count);
 }
 void list_history(git_repository *repo,const char *(*next)()){
   git_reference *head;
@@ -87,6 +92,7 @@ void list_history(git_repository *repo,const char *(*next)()){
   const char* find_tree(git_tree *tr){
 	
 	const char *treename=next();
+
 	size_t count;
 	count=git_tree_entrycount(tr);
 	if(treename==NULL){

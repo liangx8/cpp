@@ -269,6 +269,7 @@ int cmp(void *l,void *r){
 }
 void learning_libgit(git_repository *);
 void list_history(git_repository *,const char *(*)());
+writers *wrt;
 int main(int argc,char **argv){
   //const char* repo_root;
   git_repository *repo=NULL;
@@ -312,7 +313,11 @@ int main(int argc,char **argv){
 	  return buf_split(b,opt.list_root,'/',&start);
 	}
 	buf_reset(b);
+	wrt=wrt_new();
+	wrt_add_handler(wrt,stderr);
+	wrt_open(wrt);
 	list_history(repo,next);
+	wrt_close(wrt);
   }
   git_repository_free(repo);
   buf_free(info.b);
