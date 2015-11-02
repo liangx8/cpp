@@ -82,8 +82,17 @@ void test_array(){
   printf("\n");
   ary_free(ary);
 }
+void test_writers(){
+  writers *ws=wrt_new();
+  wrt_add_handler(ws,stdout);
+  wrt_add_name(ws,"main.log");
+  wrt_open(ws);
+  wrt_printf(ws,"hello %s\n","world");
+  wrt_close(ws);
+}
 int main(){
   test_buf();
   test_linked();
   test_array();
+  test_writers();
 }

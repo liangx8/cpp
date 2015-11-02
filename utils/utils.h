@@ -68,4 +68,12 @@ int btr_add(btree *btr,void *);
 int btr_replace(btree *btr,void *n,void **old);
 int btr_del(btree *btr,void *,void **);
 
+// writers 同时对多个
+typedef struct _writers writers;
+writers *wrt_new();
+void wrt_add_handler(writers *wrt,FILE *h);
+int wrt_printf(writers *wrt,const char *format, ...);
+int wrt_open(writers *wrt);
+int wrt_close(writers *wrt);
+void wrt_add_name(writers *wrt,const char *name);
 #endif
