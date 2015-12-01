@@ -25,6 +25,7 @@
 
 struct options{
   const char *repo_root_dir;
+  const char *ls_path;
 };
 
 struct commitinfo{
@@ -61,8 +62,12 @@ static void get_commitinfo(git_repository *repo,struct commitinfo *info){
 }
 static int parse_option(struct options *opt,int argc,char **argv){
   int c;
-  while((c=getopt(argc,argv,""))!= -1){
+  opt->ls_path=NULL;
+  while((c=getopt(argc,argv,"l:"))!= -1){
 	switch (c){
+	case 'l':
+	  opt->ls_path=optarg;
+	  break;
 	}
   }
   if(optind >= argc){
@@ -95,7 +100,10 @@ int main(int argc,char **argv){
   check_error(git_repository_open(&repo,opt.repo_root_dir),gettext("open repository"));
   info.str=str_new();
   get_commitinfo(repo,&info);
-  list_history(repo,NULL);
+  if(opt.ls_path)
+	list_history(repo,opt.ls_path);
+  else
+	list_history(repo,NULL);
   //scan_all(repo);
 
   git_repository_free(repo);

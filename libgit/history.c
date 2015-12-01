@@ -115,11 +115,11 @@ void list_history(git_repository *repo,const char *path){
   string *str=str_new();
   auto_buffer *oidbuf=ab_new(sizeof(git_oid));
   auto_buffer *nibuf=ab_new(sizeof(struct nodeinfo));
-  
   const git_oid *cmt_id;
   int cmt_cmp(void *l,void *r){
 	return git_oid_cmp((const git_oid*)l,(const git_oid*)r);
   }
+  
   ary_sort(ary_cmt,cmt_cmp);
   int cmt_bag(const git_oid* id){
 	git_oid *oid=(git_oid*)ab_obj_malloc(oidbuf);
@@ -131,7 +131,7 @@ void list_history(git_repository *repo,const char *path){
 	ab_obj_free(oidbuf,oid);
 	return 0;
   }
-  const char* find_tree(git_tree *tr){
+  void find_tree(git_tree *tr){
 	size_t count;
 	count=git_tree_entrycount(tr);
 	for(size_t i=0;i<count;i++){
@@ -157,14 +157,44 @@ void list_history(git_repository *repo,const char *path){
   check_error(git_commit_tree(&tree,cmt),"commit tree");
   author=git_commit_author(cmt);
   committer=git_commit_committer(cmt);
+  if(path)
+  {
+	git_tree_entry *entry;
+	if(git_tree_entry_bypath(&entry,tree,path)){
+	  printf("path not exists\n");
+	  goto all_done;
+	} else {
 
-  const char* msg=find_tree(tree);
-  
+	  git_otype type=git_tree_entry_type(entry);
+	  if(type==GIT_OBJ_TREE){
+		const git_oid *tid=git_tree_entry_id(entry);
+		git_tree *stree;
+		check_error(git_tree_lookup(&stree,repo,tid),gettext("tree lookup"));
+		find_tree(stree);
+
+	  }
+	  if(type==GIT_OBJ_BLOB){
+		struct nodeinfo *node=ab_obj_malloc(nibuf);
+		ary_add(nodes,node);
+		git_oid_cpy(&(node->oid),git_tree_entry_id(entry));
+		node->name=str_dup(str,git_tree_entry_name(entry));
+		git_oid_cpy(&(node->cmt_id),cmt_id);
+		node->type=git_tree_entry_type(entry);
+		node->atime.time=author->when.time;
+		node->atime.offset=author->when.offset;
+		node->ctime.time=committer->when.time;
+		node->ctime.offset=committer->when.offset;
+		msg_cpy(node->msg,git_commit_message(cmt),50);
+	  }
+	}
+	git_tree_entry_free(entry);
+  } else {
+	  find_tree(tree);
+  }
+
 
   git_tree_free(tree);
-  if(msg){
-	fprintf(stderr,"%s\n",msg);
-  } else {
+  {
 	unsigned int parent_count=git_commit_parentcount(cmt);
 	for(unsigned int x=0;x<parent_count;x++){
 	  git_commit *parent;
@@ -173,7 +203,7 @@ void list_history(git_repository *repo,const char *path){
 	  git_commit_free(parent);
 	}
   }
-
+ all_done:
   git_commit_free(cmt);
   git_reference_free(head);
   for(size_t i=0;i<ary_size(nodes);i++){
