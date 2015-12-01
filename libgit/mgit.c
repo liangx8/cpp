@@ -60,14 +60,25 @@ static void get_commitinfo(git_repository *repo,struct commitinfo *info){
   //  print_commit(commit);
   git_commit_free(commit);
 }
+void usage(const char* name){
+  printf("%s: [-l <path> | -h] <repository path>\n",name);
+  printf("    -l    ");
+  printf(gettext("show latest commit id for path\n"));
+  printf("    -h    ");
+  printf(gettext("show this message and exit.\n"));
+  exit(0);
+}
 static int parse_option(struct options *opt,int argc,char **argv){
   int c;
   opt->ls_path=NULL;
-  while((c=getopt(argc,argv,"l:"))!= -1){
+  while((c=getopt(argc,argv,"l:h"))!= -1){
 	switch (c){
 	case 'l':
 	  opt->ls_path=optarg;
 	  break;
+	case 'h':
+	  usage("mgit");
+	  return -1;
 	}
   }
   if(optind >= argc){
