@@ -4,8 +4,7 @@ RM=rm -rf
 CFLAGS=-Wall -g -I ../utils
 TARGET=mgit
 
-
-SRCS=${TARGET}.c common.c ../utils/buffer.c learning.c ../utils/array.c ../utils/writers.c history.c
+SRCS=${TARGET}.c common.c ../utils/string.c ../utils/auto_buffer.c ../utils/mem.c ../utils/array.c history.c allobjects.c
 OBJS=${SRCS:.c=.o}
 LDFLAGS=-Wall -g -lgit2 # -static
 

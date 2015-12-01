@@ -104,3 +104,12 @@ const char* buf_split(buffer *b,const char*src,int split,size_t *start){
   }
   return b->head+idx;
 }
+void *buf_malloc(buffer *b,size_t size){
+  size_t idx=b->size;
+  b->size += size;
+  if(b->size>b->capacity){
+	b->capacity=(b->size / BUFFER_BLOCKSZ + 1)*BUFFER_BLOCKSZ;
+	b->head=realloc(b->head,b->capacity);
+  }
+  return b->head+idx;
+}

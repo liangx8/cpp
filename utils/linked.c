@@ -12,8 +12,6 @@ struct _linked{
 };
 
 
-
-
 linked *lnk_new(){
   linked *lnk=(linked *)malloc(sizeof(linked));
   lnk->head=NULL;
@@ -22,8 +20,8 @@ linked *lnk_new(){
 }
 void lnk_free(linked *lnk){
   struct _lnk_node *p;
-  p=lnk->head;
   assert(lnk);
+  p=lnk->head;
   while(p){
 	struct _lnk_node *n=p->next;
 	free(p);
@@ -62,9 +60,7 @@ int lnk_push(linked *lnk,void *obj){
   struct _lnk_node *n=(struct _lnk_node *)malloc(sizeof(struct _lnk_node));
   n->obj=obj;
   lnk->head=n;
-  if(p){
-	n->next=p;
-  }
+  n->next=p;
   lnk->size++;
   return 0;
 }

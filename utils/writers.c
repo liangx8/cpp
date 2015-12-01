@@ -55,22 +55,22 @@ int wrt_open(writers *io){
   }
   return ary_foreach(io->ios,each_cb);
 }
-int wrt_close(writers *io){
+int wrt_close(writers *wrt){
   int each_cb(void *p){
 	assert(p);
 	struct sio *io1=(struct sio*)p;
 	if(io1->need_close){
 	  fclose(io1->h);
 	}
-	if(io->buf){
-	  free(io->buf);
-	}
 	free(io1);
 	return 0;
   }
-  ary_foreach(io->ios,each_cb);
-  ary_free(io->ios);
-  free(io);
+  ary_foreach(wrt->ios,each_cb);
+  if(wrt->buf){
+	free(wrt->buf);
+  }
+  ary_free(wrt->ios);
+  free(wrt);
   return 0;
 }
 int wrt_printf(writers *wrt,const char *format,...){

@@ -1,7 +1,7 @@
 CC=gcc
 FLAG=-Wall -g
 CFLAG=${FLAG}
-OBJS=buffer.o linked.o btree.o main.o array.o writers.c
+OBJS=linked.o btree.o main.o array.o writers.o auto_buffer.o string.o mem.o
 TARGET=../bin/main
 all:$(TARGET)
 	@echo "*** Done ***"
