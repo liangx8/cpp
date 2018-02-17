@@ -8,3 +8,4 @@ Some utilities for personal use
 - btree a balance tree algorithm(Not completed)
 - files search a large file in sub-directory
 - ascii ANSI terminal color code example in C
+- pcspkr Manipulate pc speaker
