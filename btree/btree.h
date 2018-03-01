@@ -15,6 +15,9 @@ typedef struct {
 } Btree;
 Btree *btree_new(int (*)(ELEMENT,ELEMENT));
 ELEMENT  btree_add(Btree*,ELEMENT);
-void  btree_each(Btree*,int (*)(ELEMENT));
+void btree_each(Btree*,int (*)(ELEMENT));
+void btree_clear(Btree *,int (*)(ELEMENT));
+void btree_balance(Btree *);
+
 void btree_print(node *top,int,wchar_t* (*)(ELEMENT));
 #endif

@@ -72,4 +72,3 @@ void btree_print(node *top,int w,wchar_t *(*str)(ELEMENT)){
   cov=str;
   pt(top,&col,&ary);
 }
-
