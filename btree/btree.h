@@ -2,18 +2,19 @@
 #define __BTREE_H__
 #include <wchar.h>
 
-typedef unsigned long ULONG;
+typedef void* ELEMENT;
 typedef struct _node {
-  ULONG e;
+  ELEMENT e;
   struct _node *l,*r;
-  int lh,rh;
+  // 根据左右的深度 左边深位负数，右边深位正数
+  int balance;
 } node;
 typedef struct {
-  int (*comp)(ULONG,ULONG);
+  int (*comp)(ELEMENT,ELEMENT);
   node *top;
 } Btree;
-Btree *btree_new(int (*)(ULONG,ULONG));
-ULONG  btree_add(Btree*,ULONG);
-void  btree_each(Btree*,int (*)(ULONG));
-void btree_print(node *top,int,wchar_t* (*)(ULONG));
+Btree *btree_new(int (*)(ELEMENT,ELEMENT));
+ELEMENT  btree_add(Btree*,ELEMENT);
+void  btree_each(Btree*,int (*)(ELEMENT));
+void btree_print(node *top,int,wchar_t* (*)(ELEMENT));
 #endif

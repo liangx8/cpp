@@ -1,9 +1,9 @@
 // for linux
 // -*-coding:utf-8-*-
 /**
-ÔÚmingw for windows Ê±£¬ longµÄ³¤¶ÈÎª 4£¬ÔÚlinux±àÒëÊ±£¬ long µÄ³¤¶ÈÎª8
-ËùÒÔ£¬µ±ÔÚwindowsÏÂ£¬ÎÄ¼þ´óÐ¡²»ÄÜ´óÓÚ 2^32£¨4,294,967,295£© £¬·ñÔò»á²»×¼È·
-Èç¹ûÓÐÎÄ¼þ´óÓÚ4G,Ó¦¸ÃÊ¹ÓÃwindows api
+åœ¨mingw for windows æ—¶ï¼Œ longçš„é•¿åº¦ä¸º 4ï¼Œåœ¨linuxç¼–è¯‘æ—¶ï¼Œ long çš„é•¿åº¦ä¸º8
+æ‰€ä»¥ï¼Œå½“åœ¨windowsä¸‹ï¼Œæ–‡ä»¶å¤§å°ä¸èƒ½å¤§äºŽ 2^32ï¼ˆ4,294,967,295ï¼‰ ï¼Œå¦åˆ™ä¼šä¸å‡†ç¡®
+å¦‚æžœæœ‰æ–‡ä»¶å¤§äºŽ4G,åº”è¯¥ä½¿ç”¨windows api
  */
 //#include <stdint.h>
 #include <cstdlib> // atoi()
@@ -44,8 +44,8 @@ public:
 	handle=iconv_open(tocode,fromcode);
 	if (handle == (iconv_t)-1){
 	  if(errno== EINVAL)
-		throw std::wstring(L"iconv_open:²»Ö§³Ö±àÂë×ª»»");
-	  throw std::wstring(L"iconv_open:ÆäËû´íÎó");
+		throw std::wstring(L"iconv_open:ä¸æ”¯æŒç¼–ç è½¬æ¢");
+	  throw std::wstring(L"iconv_open:å…¶ä»–é”™è¯¯");
 	}
 
   }
@@ -58,13 +58,13 @@ public:
 	}
 	iconv_close(handle);
   }
-  //*outp ÖÐÖ¸¶¨·µ»ØµÄbuf²»ÐèÒª±»ÊÍ·Å£¬IConv»á×Ô¶¯¹ÜÀíÄÚ´æ
+  //*outp ä¸­æŒ‡å®šè¿”å›žçš„bufä¸éœ€è¦è¢«é‡Šæ”¾ï¼ŒIConvä¼šè‡ªåŠ¨ç®¡ç†å†…å­˜
   size_t convert(const char *inbuf,size_t len,char **outp) throw (std::wstring&){
 	char *p1,*p2;
 	if(outlen==0){
 	  outlen=len*4;
 	  if(outlen>16*1024*1024){
-		throw std::wstring(L"ÄÚÈÝ×ª»»½á¹ûÌ«¶à");
+		throw std::wstring(L"å†…å®¹è½¬æ¢ç»“æžœå¤ªå¤š");
 	  }
 	  outbuf=new char[outlen];
 	}
@@ -124,7 +124,7 @@ void walk(const char *top,void (*p)(const char *,struct stat *)) throw (std::wst
   int err_code;
   DIR *dir;
   if((err_code=stat(top,&sb))==-1){
-	throw std::wstring(L"·ÃÎÊÎÄ¼þ³ö´íÁË");
+	throw std::wstring(L"è®¿é—®æ–‡ä»¶å‡ºé”™äº†");
   }
   switch (sb.st_mode & S_IFMT){
   case S_IFBLK:  wprintf(L"block device\n");            break;
@@ -136,7 +136,7 @@ void walk(const char *top,void (*p)(const char *,struct stat *)) throw (std::wst
 	  wprintf(L"error(%s):",top);
 	  switch(errno){
 	  case EACCES:wprintf(L"Permission denied!");break;
-	  default:wprintf(L"ÆäËû´íÎó£¡");
+	  default:wprintf(L"å…¶ä»–é”™è¯¯ï¼");
 	  }
 	} else {
 	  struct dirent *sd=NULL;
@@ -255,7 +255,7 @@ int main(int argc, char **argv){
 	delete dirs[i]->second;
 	delete dirs[i];
   }
-  //wprintf(L"ÖÐÎÄ");
+  //wprintf(L"ä¸­æ–‡");
   // IConvUtil c("GBK");
 
   return 0;

@@ -3,7 +3,7 @@
 #include <wchar.h>
 
 #include "btree.h"
-wchar_t* (*cov)(ULONG);
+wchar_t* (*cov)(ELEMENT);
 struct array {
   int len;
   int *val;
@@ -65,7 +65,7 @@ void pt(node *top,int *col,struct array *ncol){
 
 // top
 // w 转换对象成为char* 后的长度
-void btree_print(node *top,int w,wchar_t *(*str)(ULONG)){
+void btree_print(node *top,int w,wchar_t *(*str)(ELEMENT)){
   int col=0;
   struct array ary={0,NULL};
   width=w;
