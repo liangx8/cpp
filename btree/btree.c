@@ -10,7 +10,7 @@
  * return level
  */
 
-extern Callback dbg;
+
 
 typedef struct _node node;
 struct _node{
@@ -23,7 +23,8 @@ struct _btree{
   Compare comp;
   struct _node *top;
 };
-inline int depth(node *n)
+
+inline int depth_and_inc(node *n)
 {
   if(n==NULL) return 0;
   return (n->ldepth > n->rdepth ? n->ldepth:n->rdepth)+1;
@@ -33,13 +34,15 @@ inline int balance(node *n)
   return n->rdepth-n->ldepth;
 }
 
-
+#ifndef NDEBUG
+extern Callback dbg;
+#endif
 /*
       d               b
      / \             / \
     b   e           a   d
    / \  |  ====>    |  / \
-  a   c ?           ? c   f
+  a   c ?           ? c   e
   |   |               |   |
   ?   ?               ?   ?
  */
@@ -49,7 +52,7 @@ node* rotate_right(node *top)
   node* b;
   //node* a=top->l->l;
   node* c;
-  //node* f=top->r;
+  //node* e=top->r;
   assert(top != NULL);
   assert(top->l != NULL);
 
@@ -59,9 +62,9 @@ node* rotate_right(node *top)
 
 
   d->l=c;
-  d->ldepth=depth(c);
+  d->ldepth=depth_and_inc(c);
   b->r=d;
-  b->rdepth=depth(d);
+  b->rdepth=depth_and_inc(d);
   return b;
 }
 
@@ -90,9 +93,9 @@ node* rotate_left(node *top)
   //e=top->r->r;
 
   b->r=c;
-  b->rdepth=depth(c);
+  b->rdepth=depth_and_inc(c);
   d->l=b;
-  d->ldepth=depth(d);
+  d->ldepth=depth_and_inc(b);
   return d;
   
 }
@@ -101,20 +104,17 @@ node* rotate_lr(node *top)
 {
 
   assert(top->l != NULL);
-  assert(top->r != NULL);
+  //assert(top->r != NULL);
   top->l=rotate_left(top->l);
-  top->ldepth=depth(top->l);
+  top->ldepth=depth_and_inc(top->l);
   return rotate_right(top);
 }
 node* rotate_rl(node *top)
 {
-  Btree bt;
-  assert(top->l != NULL);
+  //assert(top->l != NULL);
   assert(top->r != NULL);
   top->r=rotate_right(top->r);
-  top->rdepth=depth(top->r);
-  bt.top=top;
-  dbg(&bt);
+  top->rdepth=depth_and_inc(top->r);
   return rotate_left(top);
 }
 
@@ -150,18 +150,22 @@ int recur_add(node *top,ELEMENT e,Compare cp)
 	if(top->l==NULL){
 	  top->l=new_node(e);
 	  top->ldepth ++;
+	  inc_depth=1;
 	} else {
-	  top->ldepth += recur_add(top->l,e,cp);
+	  inc_depth=recur_add(top->l,e,cp);
+	  top->ldepth += inc_depth;
 	}
-	if(top->ldepth > top->rdepth) inc_depth=1;
+	if(top->ldepth <= top->rdepth) inc_depth=0;
   } else {
 	if(top->r==NULL){
 	  top->r=new_node(e);
 	  top->rdepth ++;
+	  inc_depth=1;
 	} else {
-	  top->rdepth += recur_add(top->r,e,cp);
+	  inc_depth = recur_add(top->r,e,cp);
+	  top->rdepth += inc_depth;
 	}
-	if(top->rdepth > top->ldepth) inc_depth=1;
+	if(top->rdepth <= top->ldepth) inc_depth=0;
   }
   
   return inc_depth;
@@ -176,82 +180,114 @@ ELEMENT btree_add(Btree *tree,ELEMENT el)
   recur_add(tree->top,el,tree->comp);
   return el;
 }
-void walk(node *top,Callback callback)
+void walk(node *top,Callback callback,int *step)
 {
   if (top == NULL) {
     return;
   }
-  walk(top->l,callback);
+
+  walk(top->l,callback,step);
   wprintf(L"[%d,%d]",top->ldepth,top->rdepth);
-  if (callback(top->e)) {
+  (*step)++;
+  if (callback(*step,top->e)) {
     return;
   }
-  walk(top->r,callback);
+  walk(top->r,callback,step);
   return;
 }
 
 void btree_each(Btree* bt,Callback callback)
 {
-  walk(bt->top,callback);
+  int idx=0;
+  walk(bt->top,callback,&idx);
 }
 
 
-void node_free(node *top,Callback callback)
+void node_free(node *top,Callback callback,int *step)
 {
   if(top == NULL) return;
   if(top->l != NULL){
-	node_free(top->l,callback);
+	node_free(top->l,callback,step);
 	//free(top->l);
   }
   if(top->r != NULL){
-	node_free(top->r,callback);
+	node_free(top->r,callback,step);
 	//free(top->r);
   }
+  (*step)++;
   if(callback != NULL){
-	callback(top->e);
+	callback(*step,top->e);
   }
   free(top);
 }
 void btree_clear(Btree *bt,  Callback callback)
 {
-  node_free(bt->top,callback);
+  int idx=0;
+  node_free(bt->top,callback,&idx);
+}
+int is_balance(node*top)
+{
+  int b;
+  if(top==NULL) return 1;
+  b = balance(top);
+  if(b < -1 || b > 1) return 0;
+  return is_balance(top->l) && is_balance(top->r);
+}
+node* balance_node(node *top)
+{
+  int bal;
+  assert(top != NULL);
+  if(top->l != NULL){
+	top->l = balance_node(top->l);
+	top->ldepth=depth_and_inc(top->l);
+  }
+  if(top->r != NULL){
+	top->r = balance_node(top->r);
+	top->rdepth=depth_and_inc(top->r);
+  }
+  while(1){
+	bal=balance(top);
+#ifndef NDEBUG
+	if(bal < -1 || bal > 1){
+	  Btree bt;
+	  bt.top=top;
+	  dbg(0,(ELEMENT)&bt);
+	}
+#endif
+	if(bal > 1){
+	  // turn left
+	  assert(top->r != NULL);
+	  if(top->r->l == NULL ){
+		top=rotate_left(top);
+	  } else {
+		top=rotate_rl(top);
+	  }
+	} else if (bal < -1){
+	  // turn right
+	  assert(top->l != NULL);
+	  if(top->l->r == NULL ){
+		top=rotate_right(top);
+	  } else {
+		top=rotate_lr(top);
+	  }
+	} else
+	  break;
+#ifndef NDEBUG
+	{
+	  Btree bt;
+	  bt.top=top;
+	  dbg(0,(ELEMENT)&bt);
+	}
+#endif
+  }
+  return top;
 }
 
 void btree_balance(Btree *bt)
 {
-  bt->top=rotate_rl(bt->top);
+  if(bt->top == NULL) return;
+  while(!is_balance(bt->top))
+	bt->top=balance_node(bt->top);
 }
 
 
-/*
-                      3
-                     / \
-                    2   8
-                   /   / \
-                  0   4   9
-                   \   \   
-                    1   5  
-                         \
-                          7
-                         /
-                        6
-
-                      3
-                     / \
-                    2   4
-                   /     \
-                  0       8
-                   \     / \
-                    1   5   9
-                         \
-                          7
-                         /
-                        6
-
-
-         1
-       0   3
-          2 4
-             5
-
- */

@@ -5,7 +5,7 @@
 typedef void* ELEMENT;
 
 typedef struct _btree Btree;
-typedef int (*Callback)(ELEMENT);
+typedef int (*Callback)(int,ELEMENT);
 typedef int (*Compare)(ELEMENT,ELEMENT);
 
 Btree *btree_new(Compare);
