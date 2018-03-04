@@ -33,7 +33,14 @@ inline int balance(node *n)
 {
   return n->rdepth-n->ldepth;
 }
-
+int is_balance(node*top)
+{
+  int b;
+  if(top==NULL) return 1;
+  b = balance(top);
+  if(b < -1 || b > 1) return 0;
+  return is_balance(top->l) && is_balance(top->r);
+}
 #ifndef NDEBUG
 extern Callback dbg;
 #endif
@@ -134,6 +141,62 @@ node *new_node(ELEMENT e)
   n->rdepth=0;
   return n;
 }
+/*
+ * 加节点后同时平衡
+ */
+node* balance_add(node *top,ELEMENT e,Compare cp)
+{
+  int cpv;
+  int bal;
+
+  if(top==NULL)return new_node(e);
+  cpv=cp(top->e,e);
+  if(cpv>0){
+	// add to left
+	if(top->l==NULL){
+	  top->l=new_node(e);
+	  top->ldepth=1;
+	  return top;
+	} else {
+	  top->l=balance_add(top->l,e,cp);
+	  top->ldepth = depth_and_inc(top->l);
+	}
+  } else {
+	// add to right
+	if(top->r==NULL){
+	  top->r=new_node(e);
+	  top->rdepth=1;
+	  return top;
+	} else {
+	  top->r=balance_add(top->r,e,cp);
+	  top->rdepth=depth_and_inc(top->r);
+	}
+  }
+  // balance current tree
+  bal=balance(top);
+  assert(bal >= -2 && bal <= 2);
+  if(bal == -2){
+	// rotate right
+	int bal1=balance(top->l);
+	assert(bal1 > -2 && bal1 < 2);
+	if(bal1 <= 0){
+	  top=rotate_right(top);
+	} else {
+	  top=rotate_lr(top);
+	}
+  }
+  if(bal == 2){
+	// rotate left
+	int bal1=balance(top->r);
+	assert(bal1 > -2 && bal1 < 2);
+	if(bal1 >= 0){
+	  top=rotate_left(top);
+	} else {
+	  top=rotate_rl(top);
+	}
+  }
+  return top;
+}
 /**
  * top root of node, 
  * e element to add
@@ -173,12 +236,18 @@ int recur_add(node *top,ELEMENT e,Compare cp)
 
 ELEMENT btree_add(Btree *tree,ELEMENT el)
 {
+
+  tree->top=balance_add(tree->top,el,tree->comp);
+  return el;
+
+  /*
   if(tree->top == NULL) {
 	tree->top=new_node(el);
 	return el;
   }
   recur_add(tree->top,el,tree->comp);
   return el;
+  */
 }
 void walk(node *top,Callback callback,int *step)
 {
@@ -225,14 +294,7 @@ void btree_clear(Btree *bt,  Callback callback)
   int idx=0;
   node_free(bt->top,callback,&idx);
 }
-int is_balance(node*top)
-{
-  int b;
-  if(top==NULL) return 1;
-  b = balance(top);
-  if(b < -1 || b > 1) return 0;
-  return is_balance(top->l) && is_balance(top->r);
-}
+
 node* balance_node(node *top)
 {
   int bal;
@@ -282,12 +344,16 @@ node* balance_node(node *top)
   }
   return top;
 }
-
+// 有缺陷,虽然功能实现了,有效率问题
 void btree_balance(Btree *bt)
 {
   if(bt->top == NULL) return;
   while(!is_balance(bt->top))
+	//要重复多次才能完全平衡
 	bt->top=balance_node(bt->top);
 }
-
+int test_is_balance(Btree *bt)
+{
+  return is_balance(bt->top);
+}
 
