@@ -1,5 +1,5 @@
 CC=gcc
-FLAG=-Wall -g
+FLAG=-Wall -O2
 CFLAG=${FLAG}
 OBJS=main.o btree.o printtree.o
 TARGET=../bin/main

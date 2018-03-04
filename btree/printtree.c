@@ -3,6 +3,19 @@
 #include <wchar.h>
 
 #include "btree.h"
+
+
+struct _node{
+  ELEMENT e;
+  struct _node *l,*r;
+  // 根据左右的深度 左边深位负数，右边深位正数
+  int _d1;// place holder for this module don't use it
+  int _d2;
+};
+struct _btree{
+  int (*comp)(ELEMENT,ELEMENT);
+  struct _node *top;
+};
 wchar_t* (*cov)(ELEMENT);
 struct array {
   int len;
@@ -16,7 +29,7 @@ int exists(int v, struct array *a){
   }
   return 0;
 }
-void pt(node *top,int *col,struct array *ncol){
+void pt(struct _node *top,int *col,struct array *ncol){
   struct array nncol;
   int i;
   wchar_t *val;
@@ -65,10 +78,10 @@ void pt(node *top,int *col,struct array *ncol){
 
 // top
 // w 转换对象成为char* 后的长度
-void btree_print(node *top,int w,wchar_t *(*str)(ELEMENT)){
+void btree_print(Btree *bt,int w,wchar_t *(*str)(ELEMENT)){
   int col=0;
   struct array ary={0,NULL};
   width=w;
   cov=str;
-  pt(top,&col,&ary);
+  pt(bt->top,&col,&ary);
 }

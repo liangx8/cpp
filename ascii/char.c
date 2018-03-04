@@ -9,6 +9,10 @@ int isOne(wchar_t c){
   switch(c>>8){
   case 0x25: // 单字符制表符
   case 0x28: // 盲文
+  case 0x21:
+  case 0x22:
+  case 0x23:
+  case 0x24:
 	return 1;
   }
   return c<256;
@@ -43,11 +47,7 @@ void show_section(int i){
       wprintf(L"\033[33m%02x\033[0m ",x*16);
       for(int y=0;y<16;y++){
 		wchar_t c;
-		if (y%2){
-		  wprintf(L"\033[30;42m");
-		} else {
-		  wprintf(L"\033[30;43m");
-		}
+		wprintf(L"\033[0;34;47m");
 		c=i*256+x*16+y;
 		if (isPrintable(c)){
 		  if (isOne(c))

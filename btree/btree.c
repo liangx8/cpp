@@ -1,10 +1,124 @@
 #include <malloc.h>
 #include <stdio.h>
+//#include <stdlib.h> // abs()
 #include <wchar.h>
+#include <assert.h>
 
 #include "btree.h"
+/*
+ * 
+ * return level
+ */
 
-Btree *btree_new(int (*c)(ELEMENT,ELEMENT))
+extern Callback dbg;
+
+typedef struct _node node;
+struct _node{
+  ELEMENT e;
+  struct _node *l,*r;
+  // 根据左右的深度 左边深位负数，右边深位正数
+  int ldepth,rdepth;
+};
+struct _btree{
+  Compare comp;
+  struct _node *top;
+};
+inline int depth(node *n)
+{
+  if(n==NULL) return 0;
+  return (n->ldepth > n->rdepth ? n->ldepth:n->rdepth)+1;
+}
+inline int balance(node *n)
+{
+  return n->rdepth-n->ldepth;
+}
+
+
+/*
+      d               b
+     / \             / \
+    b   e           a   d
+   / \  |  ====>    |  / \
+  a   c ?           ? c   f
+  |   |               |   |
+  ?   ?               ?   ?
+ */
+node* rotate_right(node *top)
+{
+  node* d;
+  node* b;
+  //node* a=top->l->l;
+  node* c;
+  //node* f=top->r;
+  assert(top != NULL);
+  assert(top->l != NULL);
+
+  d=top;
+  b=top->l;
+  c=top->l->r;
+
+
+  d->l=c;
+  d->ldepth=depth(c);
+  b->r=d;
+  b->rdepth=depth(d);
+  return b;
+}
+
+/*
+      b                 d
+     / \               / \
+    a   d             b   e
+    |  / \    ====>  / \  |
+    ? c   e         a   c ?
+      |   |         |   |
+      ?   ?         ?   ?
+ */
+node* rotate_left(node *top)
+{
+  //node* a;
+  node* b;
+  node* c;
+  node* d;
+  //node* e;
+  assert(top != NULL);
+  assert(top->r != NULL);
+  //a=top->l;
+  b=top;
+  c=top->r->l;
+  d=top->r;
+  //e=top->r->r;
+
+  b->r=c;
+  b->rdepth=depth(c);
+  d->l=b;
+  d->ldepth=depth(d);
+  return d;
+  
+}
+
+node* rotate_lr(node *top)
+{
+
+  assert(top->l != NULL);
+  assert(top->r != NULL);
+  top->l=rotate_left(top->l);
+  top->ldepth=depth(top->l);
+  return rotate_right(top);
+}
+node* rotate_rl(node *top)
+{
+  Btree bt;
+  assert(top->l != NULL);
+  assert(top->r != NULL);
+  top->r=rotate_right(top->r);
+  top->rdepth=depth(top->r);
+  bt.top=top;
+  dbg(&bt);
+  return rotate_left(top);
+}
+
+Btree *btree_new(Compare c)
 {
   Btree *bt=(Btree*)malloc(sizeof(Btree));
   bt->comp=c;
@@ -16,75 +130,73 @@ node *new_node(ELEMENT e)
   n=(node*)malloc(sizeof(node));
   n->e=e;
   n->l=n->r=NULL;
-  n->balance=0;
+  n->ldepth=0;
+  n->rdepth=0;
   return n;
 }
-
 /**
- * top old root of node, 
+ * top root of node, 
  * e element to add
  * cp compare
- * premote, change of depth of new tree
+ * return number of increase depth
  */
-node *recur_add(node *top,ELEMENT e,int (*cp)(ELEMENT,ELEMENT), int *premote)
+int recur_add(node *top,ELEMENT e,Compare cp)
 {
   int cpv;
-  int p;
-  int depth;
-
-  if (top==NULL) {
-	if(premote!=NULL)
-	  *premote=1;
-    return new_node(e);
-  }
-  // 获取当前节点的平衡深度
-  depth= top->balance >= 0 ? top->balance : - top->balance;
+  int inc_depth=0;
+  assert(top != NULL);
   cpv=cp(top->e,e);
   if (cpv>0) {
-	top->l=recur_add(top->l,e,cp,&p);
-	top->balance -= p;
+	if(top->l==NULL){
+	  top->l=new_node(e);
+	  top->ldepth ++;
+	} else {
+	  top->ldepth += recur_add(top->l,e,cp);
+	}
+	if(top->ldepth > top->rdepth) inc_depth=1;
   } else {
-    top->r=recur_add(top->r,e,cp,&p);
-	top->balance += p;
+	if(top->r==NULL){
+	  top->r=new_node(e);
+	  top->rdepth ++;
+	} else {
+	  top->rdepth += recur_add(top->r,e,cp);
+	}
+	if(top->rdepth > top->ldepth) inc_depth=1;
   }
-  if(premote != NULL){
-	int new_depth= top->balance >= 0 ? top->balance : - top->balance;
-	// 平衡深度增加，必然整个树都增加了1。
-	// 平衡深度减少，节点必然是加到浅的叶子，对整个树的深度没有影响，因为这个是加节点。不会有减少可能
-	*premote = new_depth > depth ? 1 : 0;
-  }
-
-  return top;
+  
+  return inc_depth;
 }
-// 如果有重复返回旧的元素
+
 ELEMENT btree_add(Btree *tree,ELEMENT el)
 {
-  tree->top=recur_add(tree->top,el,tree->comp,NULL);
-  return 0;
+  if(tree->top == NULL) {
+	tree->top=new_node(el);
+	return el;
+  }
+  recur_add(tree->top,el,tree->comp);
+  return el;
 }
-void walk(node *top,int (*callback)(ELEMENT))
+void walk(node *top,Callback callback)
 {
   if (top == NULL) {
     return;
   }
-  if (top->l != NULL) {
-    walk(top->l,callback);
-  }
-  wprintf(L"(%d)",top->balance);
+  walk(top->l,callback);
+  wprintf(L"[%d,%d]",top->ldepth,top->rdepth);
   if (callback(top->e)) {
     return;
   }
-  if (top->r != NULL) {
-    walk(top->r,callback);
-  }
+  walk(top->r,callback);
   return;
 }
 
-void btree_each(Btree* bt,int (*callback)(ELEMENT))
+void btree_each(Btree* bt,Callback callback)
 {
   walk(bt->top,callback);
 }
-void node_free(node *top,int (*callback)(ELEMENT))
+
+
+void node_free(node *top,Callback callback)
 {
   if(top == NULL) return;
   if(top->l != NULL){
@@ -100,17 +212,46 @@ void node_free(node *top,int (*callback)(ELEMENT))
   }
   free(top);
 }
-void btree_clear(Btree *bt,  int (*callback)(ELEMENT))
+void btree_clear(Btree *bt,  Callback callback)
 {
   node_free(bt->top,callback);
 }
 
-node *node_balance(node *top)
-{
-
-  return top;
-}
 void btree_balance(Btree *bt)
 {
-  bt->top=node_balance(bt->top);
+  bt->top=rotate_rl(bt->top);
 }
+
+
+/*
+                      3
+                     / \
+                    2   8
+                   /   / \
+                  0   4   9
+                   \   \   
+                    1   5  
+                         \
+                          7
+                         /
+                        6
+
+                      3
+                     / \
+                    2   4
+                   /     \
+                  0       8
+                   \     / \
+                    1   5   9
+                         \
+                          7
+                         /
+                        6
+
+
+         1
+       0   3
+          2 4
+             5
+
+ */
