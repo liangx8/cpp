@@ -13,6 +13,12 @@ int isOne(wchar_t c){
   case 0x22:
   case 0x23:
   case 0x24:
+  case 0xf0:
+  case 0xf1:
+  case 0xf2:
+  case 0xf3:
+  case 0xf4:
+  case 0xf5:
 	return 1;
   }
   return c<256;
@@ -51,7 +57,7 @@ void show_section(int i){
 		c=i*256+x*16+y;
 		if (isPrintable(c)){
 		  if (isOne(c))
-			wprintf(L"%lc\033[0m  ",c);
+			wprintf(L"%lc \033[0m ",c);
 		  else
 			wprintf(L"%lc\033[0m ",c);
 		}else
