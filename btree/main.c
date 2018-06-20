@@ -58,9 +58,14 @@ int* get_matrix(int size)
   if(size > RANGE_MAX)size=RANGE_MAX;
   int *m=malloc(sizeof(int)*size);
   FILE *fp=fopen("data.txt","r");
+  if (fp==NULL){
+	wprintf(L"data.txt can't be opened!\n");
+	exit(-1);
+  }
   for(int i=0;i<size;i++){
 	fscanf(fp,"%d",&(m[i]));
   }
+  fclose(fp);
   return m;
 }
 #define TEST_AMOUNT 10000000
