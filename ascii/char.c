@@ -1,6 +1,11 @@
+#include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 #include <wchar.h>
 #include <locale.h>
+#include <unistd.h>
+#include <iconv.h>
+
 const char *hex="0123456789ABCDEF";
 int isPrintable(wchar_t c){
   return c>=0x20;
@@ -67,18 +72,46 @@ void show_section(int i){
     }
     wprintf(L"\n");
 }
+void decode_and_print(const char *what)
+{
+  iconv_t uni=iconv_open("UNICODE","UTF-8");
+  char *obuf=malloc(100);
+  char *p=obuf;
+  size_t inlen=strlen(what);
+  size_t outlen=100;
+  if(obuf == NULL){
+    wprintf(L"error 1\n");
+  }
+  if(iconv(uni,(char **)&what,&inlen,&p,&outlen) < 0){
+    wprintf(L"convert error\n");
+  }
+  wprintf(L"UNICODE:");
+  for(char *i=obuf;i!=p;i++){
+    wprintf(L"0x%x ",*i);
+  }
+  wprintf(L"\n");
+  free(obuf);
+}
 int main(int argc,char **argv){
   setlocale(LC_ALL,"");
 
   int section;
-  if(argc>1){
-	section=hexstr2i(argv[1]);
-	if(section>=0){
-	  show_section(section);
-	} else {
-	  wprintf(L"wrong number, must in range 0x00 ~ 0xff\n");
-	}
-	return 0;
+  int opt;
+
+  while((opt=getopt(argc,argv,"d:t:")) != -1){
+    switch(opt){
+    case 'd':
+      section=hexstr2i(optarg);
+      if(section>=0){
+	show_section(section);
+      } else {
+	wprintf(L"wrong number, must in range 0x00 ~ 0xff\n");
+      }
+      return 0;
+    case 't':
+      decode_and_print(optarg);
+      return 0;
+    }
   }
 
   for(int i=0;i<256;i++){

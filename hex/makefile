@@ -2,12 +2,12 @@
 CC=g++
 RM=rm -rf
 CFLAGS=-Wall -g
-TARGET=hexl
+TARGET=hex
 
 
 SRCS=${TARGET}.cpp
 OBJS=${SRCS:.cpp=.o}
-LDFLAGS=-Wall -g -liconv # -static
+LDFLAGS=-Wall -g # -static
 
 all:${TARGET}
 	@echo "*** Done ***"

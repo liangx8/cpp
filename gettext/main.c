@@ -10,20 +10,22 @@
  */
 
 
-#include <clocale>
-#include <cstdio>
+#include <locale.h>
+#include <stdio.h>
 #include <libintl.h>
 #include <strings.h>
 #include <time.h>
 #define LOCALEDIR "locale/"
+#ifndef PACKAGE
 #define PACKAGE "sample"
+#endif
 #ifndef UNICODE
 #define UNICODE
 #endif
 
 
 void showtime(struct tm *t){
-  printf("%d-%d-%d %d:%d:%d %d\n",t->tm_year+1900,t->tm_mon+1,t->tm_mday,t->tm_hour,t->tm_min,t->tm_sec,timezone);
+  printf("%d-%d-%d %d:%d:%d %ld\n",t->tm_year+1900,t->tm_mon+1,t->tm_mday,t->tm_hour,t->tm_min,t->tm_sec,timezone);
 }
 int main(int argc, char **argv){
   printf("current locale: %s\n",setlocale(LC_ALL,NULL));
