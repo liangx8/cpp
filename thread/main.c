@@ -29,7 +29,7 @@ static void *thread_start(void *arg)
 {
 	struct thread_info *tinfo=arg;
 	char *uargv,*p;
-	printf(gettext("Thread %d: top of stack near %p; argv_start=%s\n"),
+	printf(gettext("Thread %2d: top of stack near %p; argv_start=%s\n"),
 		tinfo->thread_num,&p,tinfo->argv_string);
 	uargv = strdup(tinfo->argv_string);
 	if(uargv==NULL)
@@ -51,13 +51,15 @@ int main(int argc,char **argv)
 	int stack_size;
 	char *res;
 	stack_size = -1;
-	while((opt=getopt(argc,argv,"s:"))==-1){
+	while((opt=getopt(argc,argv,"s:"))!=-1){
 		switch(opt){
 			case 's':
 				stack_size=strtoul(optarg,NULL,0);
+				printf(gettext("stack_size %db\n"),stack_size);
+				break;
 			default:
 				printf(gettext("Usage: %s [-s stack-size] arg...\n"),argv[0]);
-				exit(-1);
+				return -1;
 		}
 	}
 	num_threads = argc - optind;
@@ -68,7 +70,7 @@ int main(int argc,char **argv)
 	if(stack_size > 0){
 		s = pthread_attr_setstacksize(&attr,stack_size);
 		if(s != 0){
-			handle_error_en(s,"pthread_attr_init() set stack size failed");
+			handle_error_en(s,"pthread_attr_init()");
 		}
 	}
 	tinfo = calloc(num_threads,sizeof(struct thread_info));
@@ -93,9 +95,9 @@ int main(int argc,char **argv)
 		if(s != 0){
 			handle_error_en(s,"pthread_join");
 		}
-		printf(gettext("Joined with thread %d; returned value was %s\n"),
+		printf(gettext("Joined with thread %2d; returned value was %s\n"),
 			tinfo[tnum].thread_num,res);
-			free(res);
+		free(res);
 	}
 	free(tinfo);
 	exit(0);

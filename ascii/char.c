@@ -1,3 +1,6 @@
+// 😇
+// ♈♉♊♋♌♍♎♏
+// 🔋 🔌⚡
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -5,6 +8,13 @@
 #include <locale.h>
 #include <unistd.h>
 #include <iconv.h>
+#include <stdint.h>
+
+
+uint32_t abcd(uint32_t t)
+{
+	return t/7;
+}
 
 const char *hex="0123456789ABCDEF";
 int isPrintable(wchar_t c){
@@ -52,21 +62,21 @@ int hexstr2i(const char *p){
   if (x > 255) return -1;
   return x;
 }
-void show_section(int i){
-    wprintf(L"\033[31m%02x\033[0m \033[32m00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F\033[0m\n",i);
+void show_section(int i,int (*cvt)(wchar_t,wchar_t[])){
+  int cnt;
+  wchar_t xx[8];
+    wprintf(L"\033[31m%04x\033[0m \033[32m00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F\033[0m\n",i);
     for(int x=0;x<16;x++){
-      wprintf(L"\033[33m%02x\033[0m ",x*16);
+      wprintf(L"\033[33m%04x\033[0m ",x*16);
       for(int y=0;y<16;y++){
-		wchar_t c;
-		wprintf(L"\033[0;34;47m");
-		c=i*256+x*16+y;
-		if (isPrintable(c)){
-		  if (isOne(c))
-			wprintf(L"%lc \033[0m ",c);
-		  else
-			wprintf(L"%lc\033[0m ",c);
-		}else
-		  wprintf(L"NA\033[0m ");
+	wchar_t c;
+	wprintf(L"\033[0;34;47m");
+	c=i*256+x*16+y;
+	cnt=cvt(c,xx);
+	for(int y=0;y<cnt;y++){
+	  wprintf(L"%lc",xx[y]);
+	}
+	wprintf(L"\033[0m ");
       }
       wprintf(L"\n");
     }
@@ -92,18 +102,48 @@ void decode_and_print(const char *what)
   wprintf(L"\n");
   free(obuf);
 }
+int ok(wchar_t in,wchar_t buf[])
+{
+  int size=1;
+  if(isPrintable(in)){
+    buf[0]=in;
+  } else {
+    buf[0]=L'?';
+  }
+  if(isOne(in)){
+    buf[1]=L' ';
+    size=2;
+  }
+
+  return size;
+}
+
+void symbol(void)
+{
+  wprintf(L"Greek alphabet(希腊字母) UNICDE UPPERCASE[U+0391 ~ U+03A9]\n");
+  show_section(3,ok);
+  wprintf(L"Miscellaneous Symbols\n");
+  show_section(0x26,ok);
+}
+void ext(int sect)
+{
+  sect = sect * 256;
+  for(int i=0;i<256;i++){
+    show_section(sect+i,ok);
+  }
+}
 int main(int argc,char **argv){
   setlocale(LC_ALL,"");
 
   int section;
   int opt;
 
-  while((opt=getopt(argc,argv,"d:t:")) != -1){
+  while((opt=getopt(argc,argv,"e:gd:t:")) != -1){
     switch(opt){
     case 'd':
       section=hexstr2i(optarg);
       if(section>=0){
-	show_section(section);
+	show_section(section,ok);
       } else {
 	wprintf(L"wrong number, must in range 0x00 ~ 0xff\n");
       }
@@ -111,11 +151,22 @@ int main(int argc,char **argv){
     case 't':
       decode_and_print(optarg);
       return 0;
+    case 'g':
+      symbol();
+      return 0;
+    case 'e':
+      section=hexstr2i(optarg);
+      if(section >=0){
+	ext(section);
+      } else {
+	wprintf(L"wrong number, must in range 0x00 ~ 0xff\n");
+      }
+      return 0;
     }
   }
 
   for(int i=0;i<256;i++){
-	show_section(i);
+    show_section(i,ok);
   }
 }
 /*
