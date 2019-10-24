@@ -34,6 +34,7 @@ int isOne(wchar_t c){
   case 0xf3:
   case 0xf4:
   case 0xf5:
+  case 0x1d4:
 	return 1;
   }
   return c<256;
@@ -124,6 +125,10 @@ void symbol(void)
   show_section(3,ok);
   wprintf(L"Miscellaneous Symbols\n");
   show_section(0x26,ok);
+  wprintf(L"表情\n");
+  for(uint16_t sec=0x1f3;sec < 0x1f6;sec++)
+    show_section(sec,ok);
+
 }
 void ext(int sect)
 {
