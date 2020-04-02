@@ -1,24 +1,21 @@
 .PHONY: clean
 CC=g++
-WINDRES=windres
+
 FLAG=-Wall -g
-CFLAG= ${FLAG} -mwindows -DASC_BITMAP_168_ONLY_USE_DISPLAY_CHAR
+CFLAG= ${FLAG} -DASC_BITMAP_168_ONLY_USE_DISPLAY_CHAR
 TARGET=main
 #TARGET=utf8_eli
 OBJS=${TARGET}.o
-LFLAG=${FLAG} -lmingw32
+LFLAG=${FLAG}
 
-all:${TARGET}.exe
+all:${TARGET}
 	@echo "*** Done ***"
-${TARGET}.exe:${OBJS}
+${TARGET}:${OBJS}
 	${CC} -o $@ ${OBJS} ${LFLAG}
 
 
 clean:
-	${RM} -rf *.o *.exe *.res
-	
+	${RM} -rf *.o ${TARGET}
 %.o:%.cpp
 	${CC} -c $< ${CFLAG}
-	
-%.res: %.rc resource.h
-	${WINDRES} -DGCC_WINDRES -O coff $< $@
+

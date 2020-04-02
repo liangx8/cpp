@@ -126,8 +126,8 @@ void symbol(void)
   wprintf(L"Miscellaneous Symbols\n");
   show_section(0x26,ok);
   wprintf(L"表情\n");
-  for(uint16_t sec=0x1f3;sec < 0x1f6;sec++)
-    show_section(sec,ok);
+  for(uint16_t sec=1;sec < 5;sec++)
+    show_section(0x1f3+sec,ok);
 
 }
 void ext(int sect)
