@@ -1,5 +1,5 @@
 CC=gcc
-FLAG=-Wall -O2 #-DNDEBUG
+FLAG=-Wall -O2 -DNDEBUG
 CFLAG=${FLAG}
 OBJS=main.o btree.o printtree.o
 TARGET=../bin/main

@@ -19,13 +19,11 @@ wchar_t *str(ELEMENT e){
   return buf;
 }
 int fn(int idx,ELEMENT e){
-  wprintf(L"%03d,",e);
+  wprintf(L"[%02d]%03d,",idx,e);
   if(idx % 10 == 0)wprintf(L"\n");
   return 0;
 }
-#ifndef NDEBUG
-Callback dbg;
-#endif
+
 int print(int idx,ELEMENT e){
   btree_each((Btree*)e,fn);
   wprintf(L"\n");
@@ -100,9 +98,7 @@ int main(int argc,char **argv){
   int i;
   int cnt=MAX;
   int *matrix;
-#ifndef NDEBUG
-  dbg=print;
-#endif
+
 
   if(argc > 1){
 	if(strncmp("-g",argv[1],2)==0){
@@ -132,16 +128,15 @@ int main(int argc,char **argv){
   
   matrix=get_matrix(cnt);
   for(i=0;i<cnt;i++) {
-	wprintf(L"%d,",matrix[i]);
     btree_add(bt,(ELEMENT)(long)(matrix[i]));
   }
-  wprintf(L"\n");
   free(matrix);
 
   print(0,(ELEMENT)bt);
   //btree_balance(bt);
   //print(0,(ELEMENT)bt);
 
+  wprintf(L"clear matrix ...\n");
   btree_clear(bt,fn);
   wprintf(L"\n");
   free(bt);
