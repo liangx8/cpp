@@ -41,9 +41,7 @@ int is_balance(node*top)
   if(b < -1 || b > 1) return 0;
   return is_balance(top->l) && is_balance(top->r);
 }
-#ifndef NDEBUG
-extern Callback dbg;
-#endif
+
 /*
       d               b
      / \             / \
@@ -60,6 +58,7 @@ node* rotate_right(node *top)
   //node* a=top->l->l;
   node* c;
   //node* e=top->r;
+  // assert 在定义了 宏NDEBUG 后，会成为空操作
   assert(top != NULL);
   assert(top->l != NULL);
 
@@ -256,7 +255,6 @@ void walk(node *top,Callback callback,int *step)
   }
 
   walk(top->l,callback,step);
-  wprintf(L"[%d,%d]",top->ldepth,top->rdepth);
   (*step)++;
   if (callback(*step,top->e)) {
     return;
@@ -309,13 +307,6 @@ node* balance_node(node *top)
   }
   while(1){
 	bal=balance(top);
-#ifndef NDEBUG
-	if(bal < -1 || bal > 1){
-	  Btree bt;
-	  bt.top=top;
-	  dbg(0,(ELEMENT)&bt);
-	}
-#endif
 	if(bal > 1){
 	  // turn left
 	  assert(top->r != NULL);
@@ -334,13 +325,6 @@ node* balance_node(node *top)
 	  }
 	} else
 	  break;
-#ifndef NDEBUG
-	{
-	  Btree bt;
-	  bt.top=top;
-	  dbg(0,(ELEMENT)&bt);
-	}
-#endif
   }
   return top;
 }
