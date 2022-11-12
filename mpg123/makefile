@@ -3,7 +3,8 @@ TARGET=../bin/mpg
 OBJS=mpg.o
 
 CFLAGS=
-LFLAGS=-lmpg123 -Wall
+LFLAGS=-Wall
+LFLAGS+=`pkgconf --libs libmpg123`
 all:${TARGET}
 ${TARGET}:${OBJS}
 	${CC} -o $@ $< ${LFLAGS}
