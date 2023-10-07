@@ -6,8 +6,9 @@
 #include <iconv.h>
 #include <malloc.h>
 
-#define SRC_SIZE 2048
-#define DST_SIZE (size_t)(SRC_SIZE * 1.5)
+#define PRINT_ERR() printf("%d:%s\n",__LINE__,strerror(errno))
+#define DST_BUF_SIZE 102400
+
 
 void hex(char *p,size_t size)
 {
@@ -24,7 +25,7 @@ void hex(char *p,size_t size)
     }
 }
 
-void status(size_t cnt,size_t in_left,size_t out_left)
+void status(void)
 {
     switch(errno){
         case E2BIG:
@@ -40,11 +41,10 @@ void status(size_t cnt,size_t in_left,size_t out_left)
         printf(strerror(errno));
         
     }
-    printf("transfer count: %ld, error: %d, in: %ld, out: %ld\n",cnt,errno,in_left,out_left);
     
 }
-#define CVAL  40
-size_t correct(iconv_t cd,char *p,size_t rest){
+#define CVAL  100
+size_t correct(iconv_t cd,char *p,size_t size){
     char out[CVAL];
     size_t out_left;
     size_t in_left;
@@ -55,12 +55,18 @@ size_t correct(iconv_t cd,char *p,size_t rest){
         printf("跳过%d字节\n",skip);
         if(skip){
             int ans;
-            in_left=rest-skip;
+            in_left=size-skip;
             out_left=CVAL;
             char *p1=p+skip;
-            char *o1=out;
-            iconv(cd,&p1,&in_left,&o1,&out_left);
-            fwrite(out,CVAL-out_left,1,stdout);
+            char *o1=&out[0];
+            if(iconv(cd,&p1,&in_left,&o1,&out_left)==-1){
+                if(errno == E2BIG){
+                    fwrite(&out[0],1,CVAL-out_left,stdout);
+                } else {
+                    status();
+                    return 0;
+                }
+            }
             printf("\n可以吗?");
             scanf("%d",&ans);
             if(ans==skip){
@@ -71,86 +77,82 @@ size_t correct(iconv_t cd,char *p,size_t rest){
         }
     }
 }
-int gbk2utf8(iconv_t cd,FILE *f1,FILE *f2)
-{
-    int retcode;
-    size_t dst_left,src_left=0;
-    size_t src_size=SRC_SIZE;
 
+size_t gbk2utf8(iconv_t cd,const char *s1,const char *s2)
+{
+    size_t total;
     char *b1,*b2,*p1,*p2;
-    
-    b1=malloc(SRC_SIZE);
-    b2=malloc(DST_SIZE);
-    while(!feof(f1)){
-        size_t t_cnt;
-        dst_left=DST_SIZE;
-        p1=b1;
-        p2=b2;
-        src_size=fread(b1+src_left,1,src_size,f1);
-        src_left += src_size;
-        t_cnt=iconv(cd,&p1,&src_left,&p2,&dst_left);
-        if(t_cnt==-1){
-            switch(errno){
-            case E2BIG:
-                // unexpect error, quit program
-                printf("输出缓存不够\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
-                retcode=-1;
-                goto err_exit;
-            case EILSEQ:// 无效的字符编码,跳过一字节
-                fwrite(b2,1,DST_SIZE-dst_left,stdout);
-                status(t_cnt,src_left,dst_left);
-                {
-                    size_t cr=correct(cd,p1,src_left);
-                    if(cr==0) return -1;
-                    src_left-=cr;
-                    p1=p1+cr;
-                    printf("跳过[%ld]字节",cr);
-                }
-                status(t_cnt,src_left,dst_left);
-                break;
-            case EINVAL:// 不完整的编码，可理解未输入缓存有单个字节没有被处理
-                if(src_left != 1){
-                    // unexpect error
-                    printf("应该是1，但其实是%ld\n",src_left);
-                    status(t_cnt,src_left,dst_left);
-                }
-                break;
-            default:
-                status(t_cnt,src_left,dst_left);
-            }
-            memcpy(b1,p1,src_left);
-            src_size=SRC_SIZE-src_left;
-        } else {
-            if(src_left){
-                printf("应该是0，但其实是%ld\n",src_left);
-                fwrite(b2,1,DST_SIZE-dst_left,stdout);
-                status(t_cnt,src_left,dst_left);
-                retcode=-1;
-                goto err_exit;
-            }
-            src_size=SRC_SIZE;
-        }
-        fwrite(b2,1,DST_SIZE-dst_left,f2);
-        
+    size_t src_rem,dst_rem;
+
+    FILE *f1=fopen(s1,"r");
+    if (f1==NULL){
+        PRINT_ERR();
+        return -1;
+    }
+    FILE *f2=fopen(s2,"w+");
+    if (f2==NULL){
+        PRINT_ERR();
+        return -1;
     }
 
-    retcode=0;
-err_exit:
+    fseek(f1,0,SEEK_END);
+    total=ftell(f1);
+    rewind(f1);
+    b1=malloc(total);
+    b2=malloc(DST_BUF_SIZE);
+    fread(b1,1,total,f1);
+    if(ferror(f1)){
+        PRINT_ERR();
+        free(b1);
+        return -1;
+    }
+    fclose(f1);
+    src_rem=total;
+    dst_rem=DST_BUF_SIZE;
+    p1=b1;
+    p2=b2;
+    size_t sum=0;
+    while(1){
+        size_t skip;
+        if(iconv(cd,&p1,&src_rem,&p2,&dst_rem)==-1){
+            size_t rem_size=DST_BUF_SIZE-dst_rem;
+            if(rem_size)
+            {
+
+                fwrite(b2,rem_size,1,f2);
+            }
+            switch(errno){
+                case E2BIG:
+                    sum =total-src_rem;
+                    
+                    
+                    break;
+                case EILSEQ:
+
+                    printf("出错了:%ld -> %ld(%ld)\n",sum, total-src_rem,rem_size);
+                    skip=correct(cd,p1,src_rem);
+                    p1 +=skip;
+            }
+        }
+        p2=b2;
+        dst_rem=DST_BUF_SIZE;
+    }
     free(b1);
     free(b2);
-    return retcode;
+    fclose(f2);
+    return sum;
 }
 
 int main(int argc,char **argv)
 {
-    FILE *f=fopen("/home/arm/txt/orig.txt","rb");
-    FILE *o=fopen("/home/arm/txt/yttlj.txt","wb");
     iconv_t cd=iconv_open("utf-8","gbk");
-    int errcnt=gbk2utf8(cd,f,o);
+    size_t errcnt=gbk2utf8(cd,"/home/tec/yttlj-gbk.txt","/home/tec/ytk.txt");
     iconv_close(cd);
-    fclose(f);
-    fclose(o);
-    if(errcnt){
-        printf("有%d字符被转换\n",errcnt);
+    if(errcnt==-1){
+        return -1;
     }
+    if(errcnt){
+        printf("有%ld字符被转换\n",errcnt);
+    }
+    return 0;
 }

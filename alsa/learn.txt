@@ -1,0 +1,62 @@
+
+
+# ALSA Architecture
+## ALSA API 被分成几个主要的界面(interface)
+Control interface: 通用设备，用于管理声卡的寄存器和查询有效设备
+PCM interface: 管理数字音频的捕捉(capture)/回放(playback)，本文章的剩余部分都会专注于解释这个接口
+Raw MIDI interface:支持MIDI(Musical Instrument Digital Interface),一个电子乐器的标准，此API提供对声卡的MIDI总线访问．裸界面(raw interace)直接和MIDI事件一起运作。程序部分只是负责管理协议(protocol)和时间(timing)
+Timer interface:
+Sequencer interface:
+Mixer interface: 音量
+
+# Device Naming
+API 库用逻辑设备名代替设备文件。设备名可以是实际硬件设备或者插件。硬件设备使用格式 "hw:i,j", i 指卡号码(card number),j 指在这个卡上的设备
+
+# Sound Buffers and Data Transfer
+  * 声卡有一个硬件缓存(buffer)用来存放录音信号数据，当缓存满了，就会生成一个中断，内核声卡驱动就会用DMA把音频数据移动到应用程序内存。对于播放音频，就做一个相反DMA传输。这个硬件缓存十一个环形缓存，...(不重要的内容),在内核以外的开发，只需要关系应层的缓存，所有从现在棋后面的缓存都是仅仅意指应用层缓存。
+  * 缓存的大小能被ALSA库调用设定,缓存能够设定非常大，而传输时回出现一些不可接受的延时，要解决这个问题，ALSA分开缓存到 series of periods
+
+A period stores frames, each of which contains the samples captured at one point in time. For a stereo device, the frame would contain samples for two channels. Figure 1 illustrates the breakdown of a buffer into periods, frames and samples with some hypothetical(假设的) values. Here, left and right channel information is stored alternately(交替) within a frame; this is called interleaved mode. A non-interleaved mode, where all the sample data for one channel is stored followed by the data for the next channel, also is supported.
+
+      read/write pointer
+            |
+|0|1|2|3|4|5|6|7|8|9|a|b|c|d|e|f|  buffer = 16 periods
+            / \
+      ,----'   `------,
+      |0|1|2|3|4|5|6|7| period = 8 frames
+            / \
+           |L|R|        frame = 2 samples(left + right)
+           / \
+          |L|M|         sample = 2 bytes(LSB,MSB)
+
+# Over and Under Run
+
+When a sound device is active, data is transferred continuously between the hardware and application buffers. In the case of data capture(recording), if the application does not read the data in the buffer rapidly(迅速地) enough, the circular buffer is overwritten with new data. The resulting data loss is known as overrun. During playback, if the application does not pass data into the buffer quickly enough, it becomes starved for data, resulting in an error called underrun. The ALSA documentation sometimes refers to both of these conditions using the term XRUN. Properly designed applications can minimize XRUN and recover if it occurs.
+
+# A Typical Sound Application
+
+Programs that use the PCM interface generally follow this pseudo-code:
+
+open interface for capture or playback
+
+set hardware parameters
+
+(access mode, data format, channels, rate, etc.)
+
+while there is data to be processed:
+
+ read PCM data (capture)
+
+ or write PCM data (playback)
+
+close interface
+
+We look at some working code in the following sections. I recommend you compile and run these on your Linux system, look at the output and try some of the suggested modifications. The full listings for the example programs that accompany this article are available for download from (ftp.linuxjournal.com/pub/lj/listings/issue126/6735.tgz.)
+
+
+
+# link
+
+[https://www.linuxjournal.com/article/6735]
+
+(ALSA API)[https://www.7.alsa-project.org/alsa-doc/alsa-lib/index.html]
