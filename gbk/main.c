@@ -6,7 +6,7 @@
 #include <iconv.h>
 #include <malloc.h>
 
-#define PRINT_ERR() printf("%d:%s\n",__LINE__,strerror(errno))
+#define PRINT_ERR() printf("line(%d):%s\n",__LINE__,strerror(errno))
 #define DST_BUF_SIZE 102400
 
 
@@ -48,33 +48,30 @@ size_t correct(iconv_t cd,char *p,size_t size){
     char out[CVAL];
     size_t out_left;
     size_t in_left;
+    int skip=1;
     while(1){
-        int skip;
-        printf("跳过多少字节？");
-        scanf("%d",&skip);
-        printf("跳过%d字节\n",skip);
-        if(skip){
-            int ans;
-            in_left=size-skip;
-            out_left=CVAL;
-            char *p1=p+skip;
-            char *o1=&out[0];
-            if(iconv(cd,&p1,&in_left,&o1,&out_left)==-1){
-                if(errno == E2BIG){
-                    fwrite(&out[0],1,CVAL-out_left,stdout);
-                } else {
-                    status();
-                    return 0;
-                }
+        int ans=0;
+        in_left=size-skip;
+        out_left=CVAL;
+        char *p1=p+skip;
+        char *o1=&out[0];
+        if(iconv(cd,&p1,&in_left,&o1,&out_left)==-1){
+            int out_size=CVAL - out_left;
+            if(out_size){
+                fwrite(&out[0],1,out_size,stdout);
+            } else {
+                skip++;
+                continue;
             }
-            printf("\n可以吗?");
-            scanf("%d",&ans);
-            if(ans==skip){
+        }
+        printf("\n可以吗?");
+        while(ans != 'n'){
+            ans=getchar();
+            if(ans=='y'){
                 return skip;
             }
-        } else{
-            return 0;
         }
+        skip++;
     }
 }
 
@@ -108,34 +105,37 @@ size_t gbk2utf8(iconv_t cd,const char *s1,const char *s2)
     }
     fclose(f1);
     src_rem=total;
-    dst_rem=DST_BUF_SIZE;
     p1=b1;
-    p2=b2;
     size_t sum=0;
     while(1){
         size_t skip;
+        dst_rem = DST_BUF_SIZE;
+        p2=b2;
         if(iconv(cd,&p1,&src_rem,&p2,&dst_rem)==-1){
             size_t rem_size=DST_BUF_SIZE-dst_rem;
-            if(rem_size)
+            int retcode=errno;
+            if(src_rem)
             {
-
                 fwrite(b2,rem_size,1,f2);
+            } else {
+                break;
             }
-            switch(errno){
+            switch(retcode){
                 case E2BIG:
                     sum =total-src_rem;
-                    
-                    
                     break;
                 case EILSEQ:
+                case EINVAL:
 
                     printf("出错了:%ld -> %ld(%ld)\n",sum, total-src_rem,rem_size);
                     skip=correct(cd,p1,src_rem);
                     p1 +=skip;
+                    src_rem -= skip;
             }
+        } else {
+            printf("done1 :%lu\n",src_rem);
+            break;
         }
-        p2=b2;
-        dst_rem=DST_BUF_SIZE;
     }
     free(b1);
     free(b2);
@@ -146,7 +146,11 @@ size_t gbk2utf8(iconv_t cd,const char *s1,const char *s2)
 int main(int argc,char **argv)
 {
     iconv_t cd=iconv_open("utf-8","gbk");
-    size_t errcnt=gbk2utf8(cd,"/home/tec/yttlj-gbk.txt","/home/tec/ytk.txt");
+    if(argc!=3){
+        printf("gbk2utf8 <src> <dst>\n");
+        return -1;
+    }
+    size_t errcnt=gbk2utf8(cd,argv[1],argv[2]);
     iconv_close(cd);
     if(errcnt==-1){
         return -1;
