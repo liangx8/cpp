@@ -124,10 +124,14 @@ void symbol(void)
   wprintf(L"Greek alphabet(希腊字母) UNICDE UPPERCASE[U+0391 ~ U+03A9]\n");
   show_section(3,ok);
   wprintf(L"Miscellaneous Symbols\n");
-  show_section(0x26,ok);
+  for(uint16_t sec=0x21;sec<0x28;sec++)
+    show_section(sec,ok);
   wprintf(L"表情\n");
   for(uint16_t sec=1;sec < 5;sec++)
     show_section(0x1f3+sec,ok);
+  wprintf(L"日文符号\n");
+  for(uint16_t sec=0x31;sec<0x34;sec++)
+    show_section(sec,ok);
 
 }
 void ext(int sect)
