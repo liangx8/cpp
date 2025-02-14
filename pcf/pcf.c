@@ -2,17 +2,29 @@
 #include <wchar.h>
 #include <locale.h>
 #include "pcf.h"
+void load_char(struct PCF_FONT *pcf,wchar_t ch)
+{
+    unsigned char glyphName[256];
+    unsigned short cidx=encoding_index(pcf,ch);
+    if(cidx==0xffff){
+        wprintf(L"not available for character [%lc]\n",ch);
+    }
+    pcf_bitmaps(pcf,cidx,&glyphName[0]);
+    pcf_metrics(pcf,cidx,&glyphName[0]);
+    glyph_name(pcf,cidx,&glyphName[0],256);
+    wprintf(L"font index:%04x->>%s(%lc)\n",cidx,glyphName,ch);
 
+}
 const char *const fontname[]={
+"/usr/share/fonts/wenquanyi/wenquanyi_9pt.pcf",
 "/usr/share/fonts/wenquanyi/wenquanyi_10pt.pcf",
 "/usr/share/fonts/wenquanyi/wenquanyi_11pt.pcf",
 "/usr/share/fonts/wenquanyi/wenquanyi_12pt.pcf",
-"/usr/share/fonts/wenquanyi/wenquanyi_13px.pcf",
-"/usr/share/fonts/wenquanyi/wenquanyi_9pt.pcf"};
+"/usr/share/fonts/wenquanyi/wenquanyi_13px.pcf"
+};
 int main(int argc,char **argv)
 {
     const char *name;
-    unsigned char glyphName[256];
     setlocale(LC_ALL,"");
     if(argc>1){
         switch(argv[1][0]){
@@ -37,18 +49,8 @@ int main(int argc,char **argv)
     }
     struct PCF_FONT *pcf=pcf_load(name);
     //const wchar_t ch=L'\u33e0';
-    const wchar_t ch=L'二';
     wprintf(L"read font %s\n",name);
-    unsigned short cidx=encoding_index(pcf,ch);
-    if(cidx==0xffff){
-        wprintf(L"not available for character [%lc]\n",ch);
-        pcf_release(pcf);
-        return 0;
-    }
-    pcf_bitmaps(pcf,cidx,&glyphName[0]);
-    pcf_metrics(pcf,cidx,&glyphName[0]);
-    glyph_name(pcf,cidx,&glyphName[0],256);
+    load_char(pcf,L'\u2f1e');
     pcf_release(pcf);
-    wprintf(L"font index:%04x->>%s(%lc)\n",cidx,glyphName,ch);
     return 0;
 }

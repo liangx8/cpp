@@ -18,22 +18,17 @@ uint32_t abcd(uint32_t t)
 
 const char *hex="0123456789ABCDEF";
 int isPrintable(wchar_t c){
+  if(c==0x7f) return 0;
   return c>=0x20;
 }
 int isOne(wchar_t c){
+  int sec=c>>8;
+  if(sec<7) return 1;
+  if(sec >0x20 && sec < 0x26) return 1;
+  if(sec > 0xef && sec < 0xf6) return 1;
   switch(c>>8){
   case 0x25: // 单字符制表符
   case 0x28: // 盲文
-  case 0x21:
-  case 0x22:
-  case 0x23:
-  case 0x24:
-  case 0xf0:
-  case 0xf1:
-  case 0xf2:
-  case 0xf3:
-  case 0xf4:
-  case 0xf5:
   case 0x1d4:
 	return 1;
   }
@@ -63,20 +58,21 @@ int hexstr2i(const char *p){
   if (x > 255) return -1;
   return x;
 }
-void show_section(int i,int (*cvt)(wchar_t,wchar_t[])){
-  int cnt;
-  wchar_t xx[8];
+void show_section(int i){
     wprintf(L"\033[31m%04x\033[0m \033[32m00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F\033[0m\n",i);
     for(int x=0;x<16;x++){
       wprintf(L"\033[33m%04x\033[0m ",x*16);
       for(int y=0;y<16;y++){
 	wchar_t c;
-	wprintf(L"\033[0;34;47m");
+	wprintf(L"\033[0;30;42m");
 	c=i*256+x*16+y;
-	cnt=cvt(c,xx);
-	for(int y=0;y<cnt;y++){
-	  wprintf(L"%lc",xx[y]);
-	}
+if(isPrintable(c)){
+wprintf(L"%lc",c);
+if(isOne(c)){
+wprintf(L" ");
+}} else {
+wprintf(L"？");}
+
 	wprintf(L"\033[0m ");
       }
       wprintf(L"\n");
@@ -103,42 +99,27 @@ void decode_and_print(const char *what)
   wprintf(L"\n");
   free(obuf);
 }
-int ok(wchar_t in,wchar_t buf[])
-{
-  int size=1;
-  if(isPrintable(in)){
-    buf[0]=in;
-  } else {
-    buf[0]=L'?';
-  }
-  if(isOne(in)){
-    buf[1]=L' ';
-    size=2;
-  }
-
-  return size;
-}
 
 void symbol(void)
 {
   wprintf(L"Greek alphabet(希腊字母) UNICDE UPPERCASE[U+0391 ~ U+03A9]\n");
-  show_section(3,ok);
+  show_section(3);
   wprintf(L"Miscellaneous Symbols\n");
   for(uint16_t sec=0x21;sec<0x28;sec++)
-    show_section(sec,ok);
+    show_section(sec);
   wprintf(L"表情\n");
   for(uint16_t sec=1;sec < 5;sec++)
-    show_section(0x1f3+sec,ok);
+    show_section(0x1f3+sec);
   wprintf(L"日文符号\n");
   for(uint16_t sec=0x31;sec<0x34;sec++)
-    show_section(sec,ok);
+    show_section(sec);
 
 }
 void ext(int sect)
 {
   sect = sect * 256;
   for(int i=0;i<256;i++){
-    show_section(sect+i,ok);
+    show_section(sect+i);
   }
 }
 int main(int argc,char **argv){
@@ -152,7 +133,7 @@ int main(int argc,char **argv){
     case 'd':
       section=hexstr2i(optarg);
       if(section>=0){
-	show_section(section,ok);
+	show_section(section);
       } else {
 	wprintf(L"wrong number, must in range 0x00 ~ 0xff\n");
       }
@@ -175,7 +156,7 @@ int main(int argc,char **argv){
   }
 
   for(int i=0;i<256;i++){
-    show_section(i,ok);
+    show_section(i);
   }
 }
 /*

@@ -54,7 +54,7 @@ int pcf_bitmaps(struct FONT_TOC *font,long font_index,uint8_t *buf)
             if(x & 0x80000000){
                 wprintf(L"\U0001f520");
             }else {
-                wprintf(L"　");
+                wprintf(L"\uff3f");
             }
             x = x<<1;
         }
