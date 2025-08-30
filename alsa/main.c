@@ -7,7 +7,7 @@
 #include <unistd.h>
 #include <stdio.h>
 void usage(void){
-    printf("-l 列显所有内容\n-p 参数\n-c 播放标准输入的内容1秒\n-r 录音1秒\n");
+    printf("-l 列显所有内容\n-p 参数\n-c 播放标准输入的内容1秒\n-r 录音1秒");
 }
 
 void snd_list(void);

@@ -5,7 +5,7 @@ CC=gcc
 
 
 CSOURCE=$(shell find -name \*.c -and -type f)
-ASOURCE=$(shell find -name \*.S -and -type f)
+#ASOURCE=$(shell find -name \*.S -and -type f)
 
 
 OBJS=${CSOURCE:.c=.o} ${ASOURCE:.S=.o}
@@ -18,9 +18,9 @@ OPTC=-O2
 # -nostdlib会导致一些编译错误。缺省的内置函数如果不能用简单的方法实现时，会调用标准函数。如memset
 # 连接的时候加 -mthumb让连接器在连接的时候，一些标准函数使用 thumb标准库
 LFLAGS=-lasound
-all:../bin/alsa
+all:alsa
 
-../bin/alsa:${OBJS}
+alsa:${OBJS}
 	${CC} -o $@ ${LFLAGS} ${OBJS} 
 
 
@@ -30,6 +30,9 @@ all:../bin/alsa
 	${AS} ${PORT} -g $< -o $@
 
 clean:
-
 	find -name \*~ -or -name \*.o -exec rm \{} \;
+	rm alsa
+copy:
+	cp *.c ${HOME}/git/cpp/alsa
+	cp learn.txt ${HOME}/git/cpp/alsa
 
