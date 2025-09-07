@@ -7,7 +7,8 @@ void load_char(struct PCF_FONT *pcf,wchar_t ch)
     unsigned char glyphName[256];
     unsigned short cidx=encoding_index(pcf,ch);
     if(cidx==0xffff){
-        wprintf(L"not available for character [%lc]\n",ch);
+        wprintf(L"not available for character \u2320%lc\u2321\n",ch);
+        return;
     }
     pcf_bitmaps(pcf,cidx,&glyphName[0]);
     pcf_metrics(pcf,cidx,&glyphName[0]);

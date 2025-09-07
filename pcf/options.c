@@ -8,9 +8,9 @@ typedef struct {
 const char *const fontname[]={
 "/usr/share/fonts/wenquanyi/wenquanyi_9pt.pcf",
 "/usr/share/fonts/wenquanyi/wenquanyi_10pt.pcf",
+"/usr/share/fonts/wenquanyi/wenquanyi_13px.pcf",
 "/usr/share/fonts/wenquanyi/wenquanyi_11pt.pcf",
-"/usr/share/fonts/wenquanyi/wenquanyi_12pt.pcf",
-"/usr/share/fonts/wenquanyi/wenquanyi_13px.pcf"
+"/usr/share/fonts/wenquanyi/wenquanyi_12pt.pcf"
 };
 
 

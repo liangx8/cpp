@@ -38,21 +38,32 @@ void toc_bitmaps(long size,long offset,uint32_t format,struct FONT_TOC *font){
     }
     font->bitmaps.seek_data=pos+16;
 }
+
 int pcf_bitmaps(struct FONT_TOC *font,long font_index,uint8_t *buf)
 {
     int32_t idx_offset=font->bitmaps.seek_offsets;
     int32_t data_offset=font->bitmaps.seek_data;
     fseek(font->pcf,idx_offset+font_index*4,SEEK_SET);
-    fread(&buf[0],8,32,font->pcf);
-    long dot=msbyte4(&buf[0]);
+    fread(buf,8,32,font->pcf);
+    long dot=msbyte4(buf);
     wprintf(L"offset:%d,%d\n",dot,dot+data_offset);
     fseek(font->pcf,data_offset+dot,SEEK_SET);
-    fread(&buf[0],8,32,font->pcf);
+    fread(buf,8,32,font->pcf);
+    wchar_t st=L'０';
+    for(int ix=0;ix<10;ix++){
+        putwchar(st+ix);
+    }
+    st=L'Ａ';
+    for(int ix=0;ix<6;ix++){
+        putwchar(st+ix);
+    }
+    putwchar(L'\n');
     for(int ix=0;ix<16;ix++){
+        wprintf(L"%02d",ix);
         long x=msbyte4(&buf[ix*4]);
         for(int ix=0;ix<32;ix++){
             if(x & 0x80000000){
-                wprintf(L"\U0001f520");
+                wprintf(L"\U0001f3fb");
             }else {
                 wprintf(L"\uff3f");
             }

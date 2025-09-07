@@ -133,8 +133,16 @@ const void (*toc_handler[])(long,long,uint32_t,struct FONT_TOC*)={
     toc_glyph_names,
     toc_bdf_accelerators
 };
-
-
+const char magic4[]={'\1','f','c','p'};
+int check_magic(char buf[])
+{
+    for(int ix=0;ix<4;ix++){
+        if(buf[ix]!=magic4[ix]){
+            return -1;
+        }
+    }
+    return 0;
+}
 struct FONT_TOC* pcf_load(const char *pcfname)
 {
     FILE *pcf=fopen(pcfname,"r");
@@ -146,9 +154,13 @@ struct FONT_TOC* pcf_load(const char *pcfname)
     font->pcf=pcf;
     char head[8];
     fread(&head[0],1,8,pcf);
+    if(check_magic(head)){
+        wprintf(L"warring: 文件的magic char不是 \"\\1fcp\"\n");
+    }
     int cnt=*((uint32_t *)&head[4]);
+    
     int size=sizeof(struct _toc_entry)*cnt;
-    wprintf(L"toc total:%d\n",cnt);
+    wprintf(L"TOC count:%d\n",cnt);
     struct _toc_entry *toc=malloc(size);
     fread(toc,size,1,pcf);
     for(int ix=0;ix<cnt;ix++){
@@ -160,6 +172,7 @@ struct FONT_TOC* pcf_load(const char *pcfname)
         
     }
     wprintf(L"pos:%lx\n",ftell(pcf));
+    free(toc);
     return font;
 }
 void pcf_release(struct FONT_TOC *toc){
