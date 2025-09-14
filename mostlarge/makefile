@@ -12,9 +12,10 @@ ASOURCE=$(wildcard *.S)
 
 
 OBJS=${CSOURCE:.c=.o} ${ASOURCE:.S=.o}
-
-OPTC=-O2
-CFLAGS:=${OPTC}
+ifeq (${OPTS}x,x)
+	OPTS=-O2
+endif
+CFLAGS:=${OPTS}
 CFLAGS+=-Wall
 LFLAGS=#-lcurses
 all:${TARGET}

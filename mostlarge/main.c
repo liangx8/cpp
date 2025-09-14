@@ -1,31 +1,28 @@
 /**
  * 在指定的目录终查找最大的文件
  */
-#include <errno.h>
-#include <string.h>
 #include <stdio.h>
-// #include <malloc.h>
+#include <locale.h>
+#include <wchar.h>
+#include <malloc.h>
 #include <sys/stat.h>
-#include <dirent.h>
+#include "order.h"
 
-#define PRINT_ERR() printf("%s(%d):%s\n",__FILE__, __LINE__, strerror(errno))
-#define DST_BUF_SIZE 102400
-
-int walk(const char *top, int (*act)(const char*), int (*err_act)(struct dirent *, int));
-int on_error(struct dirent *ent, int code);
-int onefile(const char *);
-void init(size_t size);
-void most(void);
+int walk(const char *,typeof(int (*)(const char *,struct stat*)));
+int act(const char *name,struct stat *st)
+{
+    return 0;
+}
 int main(int argc, char **argv)
 {
+    setlocale(LC_ALL,"");
     if (argc == 1)
     {
-        const char *msg="usage:\n\tlarge <path>\nfind large file on folder\n";
-        printf(msg);
+        const wchar_t *msg=L"usage:\n\tlarge <path>\nfind large file on folder\n";
+        wprintf(msg);
+        void *ol=create_list(0,0);
+        free_list(ol);
         return 0;
     }
-    init(10);
-    walk(argv[1], onefile, on_error);
-    most();
-    return 0;
+    return walk(argv[1],act);
 }
