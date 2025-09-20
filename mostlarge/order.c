@@ -7,7 +7,11 @@ struct LIST{
     char data[0];
 };
 
-
+/**
+ * @brief
+ * @param size 每个单位的宽度
+ * @param num 总数
+ */
 void *create_list(int size,int num)
 {
     wprintf(L"....%d\n",sizeof(struct LIST));

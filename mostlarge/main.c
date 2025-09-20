@@ -5,14 +5,13 @@
 #include <locale.h>
 #include <wchar.h>
 #include <malloc.h>
-#include <sys/stat.h>
-#include "order.h"
 
-int walk(const char *,typeof(int (*)(const char *,struct stat*)));
-int act(const char *name,struct stat *st)
-{
-    return 0;
-}
+
+typedef int (*action)(const char*,const void*,void*);
+int walk(const char *,action,void *);
+void* act_data_create(int,int);
+int act(const char *,const void *,void *);
+void show(const void *ent);
 int main(int argc, char **argv)
 {
     setlocale(LC_ALL,"");
@@ -20,9 +19,11 @@ int main(int argc, char **argv)
     {
         const wchar_t *msg=L"usage:\n\tlarge <path>\nfind large file on folder\n";
         wprintf(msg);
-        void *ol=create_list(0,0);
-        free_list(ol);
         return 0;
     }
-    return walk(argv[1],act);
+    void *ol=act_data_create(10,200);
+    int res=walk(argv[1],act,ol);
+    show(ol);
+    free(ol);
+    return res;
 }

@@ -3,9 +3,9 @@
 #include <dirent.h>
 #include <malloc.h>
 #include <string.h>
+#include <errno.h>
 #include "order.h"
 
-typedef int(* action)(const char *,const struct stat *);
 
 int put_it(void *sp,const char *name)
 {
@@ -18,14 +18,14 @@ int put_it(void *sp,const char *name)
         fname[len]='/';
         fname[len+1]='\0';
     }
-    wprintf(L"%s\n",fname);
+    //wprintf(L"%s\n",fname);
     if(str_pool_put(sp,fname)){
         wprintf(L"内存不够\n");
         return -1;
     }
     return 0;
 }
-int _walk_any(const char *name,action act,void *sp)
+int _walk_any(const char *name,action act,void *sp,void *act_arg)
 {
     struct stat st;
     if(stat(name,&st)){
@@ -38,19 +38,27 @@ int _walk_any(const char *name,action act,void *sp)
     case S_IFIFO:
         break;
     case S_IFDIR:
+        //wprintf(L"dir \033[34m%s\033[0m\n",name);
         if(put_it(sp,name)){
+            wprintf(L"内存不足以处理文件%s\n",name);
             return -1;
         }
         break;
     case S_IFREG:
-        return act(name,&st);
+        //wprintf(L"\033[35m%s\033[0m\n",name);
+        return act(name,&st,act_arg);
     }
     return 0;
 }
-int _walk_dir(const char *name,action act,void *sp)
+int _walk_dir(const char *name,action act,void *sp,void *act_arg)
 {
+    errno=0;
     DIR *dir=opendir(name);
     if(dir==NULL){
+        if(errno==EACCES){
+            wprintf(L"拒绝访问文件%s\n",name);
+            return 0;
+        }
         wprintf(L"打开目录错误%s\n",name);
         return -1;
     }
@@ -71,11 +79,12 @@ int _walk_dir(const char *name,action act,void *sp)
         switch (de->d_type)
         {
         case DT_DIR:
-            put_it(sp,fname);
-            break;
         case DT_REG:
         case DT_UNKNOWN:
-            _walk_any(fname,act,sp);
+            if(_walk_any(fname,act,sp,act_arg)){
+                closedir(dir);
+                return -1;
+            }
             break;
         default:
             break;
@@ -87,10 +96,10 @@ int _walk_dir(const char *name,action act,void *sp)
 /**
  * @brief walkthrough a directory recusrely with undefine order
  */
-int walk(const char *parent,action act)
+int walk(const char *parent,action act,void *act_arg)
 {
-    void *sp=str_pool_new();
-    if(_walk_any(parent,act,sp)){
+    void *sp=str_pool_new(40*1024);
+    if(_walk_any(parent,act,sp,act_arg)){
         goto err_exit;
     }
     char name[256];
@@ -100,8 +109,8 @@ int walk(const char *parent,action act)
             break;
         }
         strncpy(name,dir,255);
-        wprintf(L"扫描目录%s\n",name);
-        if(_walk_dir(name,act,sp)){
+        //wprintf(L"扫描目录%s\n",name);
+        if(_walk_dir(name,act,sp,act_arg)){
             goto err_exit;
         }
     }

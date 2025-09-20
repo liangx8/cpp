@@ -46,7 +46,7 @@ void test(const char *name)
         fname[nlen+1]='\0';
     }
     wprintf(L"扫描目录:%s\n",fname);
-    void *lk=str_pool_new();
+    void *lk=str_pool_new(1);
     str_pool_put(lk,fname);
     while(1){
         const char *dir=str_pool_pop(lk);
