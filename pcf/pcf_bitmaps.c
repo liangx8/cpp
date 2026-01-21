@@ -49,15 +49,7 @@ int pcf_bitmaps(struct FONT_TOC *font,long font_index,uint8_t *buf)
     wprintf(L"offset:%d,%d\n",dot,dot+data_offset);
     fseek(font->pcf,data_offset+dot,SEEK_SET);
     fread(buf,8,32,font->pcf);
-    wchar_t st=L'０';
-    for(int ix=0;ix<10;ix++){
-        putwchar(st+ix);
-    }
-    st=L'Ａ';
-    for(int ix=0;ix<6;ix++){
-        putwchar(st+ix);
-    }
-    putwchar(L'\n');
+    wprintf(L"　０１２３４５６７８９ＡＢＣＤＥＦ\n");
     for(int ix=0;ix<16;ix++){
         wprintf(L"%02d",ix);
         long x=msbyte4(&buf[ix*4]);

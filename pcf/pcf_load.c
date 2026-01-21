@@ -107,10 +107,12 @@ void toc_ink_metrics(long size,long offset,uint32_t format,struct FONT_TOC *font
 }
 
 void toc_swidths(long size,long offset,uint32_t format,struct FONT_TOC *font){
-    uint8_t buf[4];
+    uint8_t buf[8];
     fseek(font->pcf,offset,SEEK_SET);
-    fread(&buf[0],1,4,font->pcf);
+    fread(&buf[0],1,8,font->pcf);
+    font->swidths=offset;
     toc_comm(buf,size,offset,format,6);
+    wprintf(L"    swidth count:%d\n",msbyte4(&buf[4]));
 }
 void toc_bdf_accelerators(long size,long offset,uint32_t format,struct FONT_TOC *font){
     uint8_t buf[4];

@@ -13,6 +13,7 @@ void load_char(struct PCF_FONT *pcf,wchar_t ch)
     pcf_bitmaps(pcf,cidx,&glyphName[0]);
     pcf_metrics(pcf,cidx,&glyphName[0]);
     glyph_name(pcf,cidx,&glyphName[0],256);
+    pcf_swidths(pcf,cidx);
     wprintf(L"font index:%04x->>%s(%lc)\n",cidx,glyphName,ch);
 
 }

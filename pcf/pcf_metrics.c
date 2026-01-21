@@ -55,8 +55,8 @@ int pcf_metrics(struct FONT_TOC *toc,uint32_t font_idx,uint8_t *buf)
     if(toc->metrics.format & PCF_COMPRESSED_METRICS){
         fseek(toc->pcf,toc->metrics.seek_offsets+font_idx*5,SEEK_SET);
         fread(buf,1,5,toc->pcf);
-        wprintf(L"left_sided_bearing:%u(%u)\nright_side_bearing:%u(%u)\nwidth:%u(%u),ascent:%u(%u),descent:%u(%u)\n",
-            buf[0],0x7f&buf[0],buf[1],0x7f&buf[1],buf[2],0x7f&buf[2],buf[3],0x7f&buf[3],buf[4],0x7f&buf[4]);
+        wprintf(L"left_sided_bearing:%u(%d)\nright_side_bearing:%u(%d)\nwidth:%u(%d),ascent:%u(%d),descent:%u(%d)\n",
+            buf[0],buf[0]-0x80,buf[1],buf[1]-0x80,buf[2],buf[2]-0x80,buf[3],buf[3]-0x80,buf[4],buf[4]-0x80);
     } else {
         wprintf(L"not implements yet\n");
     }
