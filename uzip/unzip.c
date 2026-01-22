@@ -1,3 +1,8 @@
+/*
+文件名是中文时，最多会出现２种编码gbk和utf8,甚至是unicode
+这些编码是没办法识别的
+*/
+
 #include <wchar.h>
 #include <stdio.h>
 #include <minizip/unzip.h>
@@ -77,8 +82,33 @@ int content(const char *name)
         total+=info->uncompressed_size;
         wprintf(L"%4d-%02d-%02d ",info->tmu_date.tm_year,info->tmu_date.tm_mon,info->tmu_date.tm_mday);
         printsize(info->uncompressed_size);
-        wprintf(L" \033[36;1m%s\033[0m\n",&buf[size]);
-        printInfo(info);
+        unsigned char *pc=(unsigned char*)&buf[size];
+        int ascii=1;
+        while(*pc){
+            if(*pc & 0xffff80){
+                ascii=0;
+                break;
+            }
+            pc++;
+        }
+        if(ascii){
+            wprintf(L" \033[36;1m%s\033[0m\n",&buf[size]);
+        } else {
+            wprintf(L" \033[36;1m%s\033[0m\n",&buf[size]);
+            // pc=(unsigned char*)&buf[size];
+            // wprintf(L" \033[34m");
+            // while(*pc){
+            //     const wchar_t wc=(wchar_t)*pc;
+            //     if(wc & 0xff80){
+            //         putwchar(L'?');
+            //     }else {
+            //         putwchar(wc);
+            //     }
+            //     pc++;
+            // }
+            // wprintf(L"\033[0m\n");
+        }
+        //printInfo(info);
         int res=unzGoToNextFile(uzh);
         if(res==UNZ_END_OF_LIST_OF_FILE){
             break;
