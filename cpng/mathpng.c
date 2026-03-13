@@ -67,10 +67,11 @@ void xbinImage(char *filename,int width,int height){
 	fp = fopen(filename, "rb");
 	if(fp == NULL ){
 		fwprintf(stderr, L"Could not open file %s for reading\n", filename);
+		return;
 	}
 	fseek(fp,0xc00,SEEK_SET);
 	fread(buf,1,512,fp);
-	if(fp != NULL) fclose(fp);
+	fclose(fp);
 	for(i=0;i<512;i++){
 		uint8_t v=buf[i];
 		for(j=0;j<8;j++){

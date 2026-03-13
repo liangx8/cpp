@@ -5,18 +5,38 @@
     "tasks": [
         {
             "label": "build",
+            "detail": "编译程序",
             "type": "shell",
             "command": "make",
-            "args": ["TARGET=uzip"],
+            "args": ["expense"],
             "group": {
                 "isDefault": true,"kind": "build"
             },
+            "options": {"cwd": "${workspaceFolder}/build"},
             "presentation": {
                 // Reveal the output only if unrecognized errors occur.
                 "reveal": "silent"
             },
             // Use the standard MS compiler pattern to detect errors, warnings and infos
             "problemMatcher": "$gcc"
+        },{
+            "label": "clean",
+            "type": "shell",
+            "command":"make",
+            "args": ["clean"],
+            "presentation": {}
+        },{
+            "label": "debug-build",
+            "type": "shell",
+            "command":"make",
+            "args": ["TARGET=uzip","OPTC=-g"],
+            "presentation": {
+                // Reveal the output only if unrecognized errors occur.
+                "reveal": "silent"
+            },
+            // Use the standard MS compiler pattern to detect errors, warnings and infos
+            "problemMatcher": "$gcc"
+
         }
     ]
 }

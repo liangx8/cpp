@@ -7,7 +7,7 @@ TARGET=../bin/chemical
 
 SRCS=chemical.cc data.cc
 OBJS=${SRCS:.cc=.o}
-LDFLAGS=-Wall -g -liconv # -static
+LDFLAGS=-Wall
 
 all:${TARGET}
 	@echo "*** Done ***"

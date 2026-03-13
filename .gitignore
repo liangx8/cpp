@@ -11,3 +11,4 @@ libusb/*
 *.exe
 .gitattributes
 bin/*
+build/*
