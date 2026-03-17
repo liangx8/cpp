@@ -24,6 +24,7 @@
             "type": "shell",
             "command":"make",
             "args": ["clean"],
+            "options": {"cwd": "${workspaceFolder}/build"},
             "presentation": {}
         },{
             "label": "debug-build",
