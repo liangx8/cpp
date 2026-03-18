@@ -17,17 +17,23 @@ int main(int argc,char **argv)
     strcpy(buf,home);
     strcat(buf,"/test.db");
     wprintf(L"数据库文件:%s\n",buf);
-    int res=sqlite3_open("/home/cyc/test.db",&db);
+    int res=sqlite3_open(buf,&db);
     if (res==SQLITE_OK)
         wprintf(L"ＳＱＬＩＴＥ３ open result code (%d)\n",res);
     sqlite3_close(db);
+    const char *textname;
     if(argc>1){
-        void *obj=read_lines(argv[1]);
-        if(obj!=NULL){
-            foreach(obj);
-            free(obj);
-            wprintf(L"释放内存\n");
-        }
+        textname=argv[1];
+    } else {
+        strcpy(buf,home);
+        strcat(buf,"/git/linux/txt/big-expense.txt");
+        textname=buf;
+    }
+    void *obj=read_lines(textname);
+    if(obj!=NULL){
+        foreach(obj);
+        free(obj);
+        wprintf(L"释放内存\n");
     }
     return 0;
 }

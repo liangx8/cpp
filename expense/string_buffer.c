@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <wchar.h>
 #include <malloc.h>
+#include <ctype.h>
 struct StringBuffer{
     void        *buf;
     long         size;
@@ -35,6 +36,11 @@ void *read_lines(const char *fname)
     int cnt=1;
     int str_begin=0;
     for(int ix=0;ix<size;ix++){
+        if(ix==0){
+
+            char *tmp=sb->buf+ix;
+            wprintf(L"0x%x %c \n",*tmp,*tmp);
+        }
         sptr=sb->buf+ix;
         if(*sptr=='\n' || *sptr=='\r'){
             *sptr='\0';
@@ -54,12 +60,31 @@ void *read_lines(const char *fname)
     sb->strs_size=cnt;
     return base;
 }
+int blankline(const char *str);
 void foreach(struct StringBuffer *sb)
 {
     int cnt=0;
     while(cnt < sb->strs_size){
-        wprintf(L"%3d %s\n",cnt,*(sb->strs+cnt));
+        if(!blankline(*(sb->strs+cnt))){
+            
+            wprintf(L"%3d %s\n",cnt,*(sb->strs+cnt));
+        }
         cnt ++;
     }
 }
-
+/**
+ * @brief 检查是否是纯空行
+ * @param str 
+ * @return 0非空行 1空行
+ */
+int blankline(const char *str)
+{
+    while(*str){
+        if(isblank(*str)){
+            str++;
+        } else {
+            return 0;
+        }
+    }
+    return -1;
+}
