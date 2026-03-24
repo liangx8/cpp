@@ -6,7 +6,12 @@
 #include <stdlib.h>
 #include <string.h>
 char buf[256];
-void foreach(void *sb);
+int foreach(void *sb,typeof(int (*)(int,const char*)));
+int onestr(int seq,const char *str)
+{
+    wprintf(L"%2d %s\n",seq,str);
+    return 0;
+}
 void *read_lines(const char*);
 int main(int argc,char **argv)
 {
@@ -31,7 +36,7 @@ int main(int argc,char **argv)
     }
     void *obj=read_lines(textname);
     if(obj!=NULL){
-        foreach(obj);
+        foreach(obj,onestr);
         free(obj);
         wprintf(L"释放内存\n");
     }

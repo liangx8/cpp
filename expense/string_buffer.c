@@ -56,18 +56,20 @@ void *read_lines(const char *fname)
     return base;
 }
 int blankline(const char *str);
-void foreach(struct StringBuffer *sb)
+int foreach(struct StringBuffer *sb,typeof(int (*)(int ,const char*)) strcb)
 {
     int cnt=0;
 
     while(cnt < sb->strs_size){
         if(blankline(*(sb->strs+cnt))){
-            wprintf(L"空行\n");
         }else{
-            wprintf(L"%3d %s\n",cnt,*(sb->strs+cnt));
+            if(strcb(cnt,*(sb->strs+cnt))){
+                return -1;
+            }
         }
         cnt ++;
     }
+    return 0;
 }
 /**
  * @brief 检查是否是纯空行
